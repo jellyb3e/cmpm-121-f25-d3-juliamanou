@@ -9,7 +9,12 @@ import "./style.css"; // student-controlled page style
 import "./_leafletWorkaround.ts"; // fixes for missing Leaflet images
 
 // Import our luck function
-//import luck from "./_luck.ts";
+import luck from "./_luck.ts";
+
+// Create Tile interface
+interface Tile extends leaflet.Rectangle {
+  pointValue: number;
+}
 
 // Create basic UI elements
 
@@ -35,7 +40,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
 //const NEIGHBORHOOD_SIZE = 8;
-//const CACHE_SPAWN_PROBABILITY = 0.1;
+const CACHE_SPAWN_PROBABILITY = 0.1;
 
 // Create the map (element with id "map" is defined in index.html)
 const map = leaflet.map(mapDiv, {
@@ -77,13 +82,12 @@ function DrawTile(lat: number, lng: number) {
     color: "gray",
     fill: false,
     weight: 1,
-  });
+  }) as Tile;
+  SpawnCache(rect);
   rect.addTo(map);
 }
 
-// DrawTile(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng); // draw a tile at the player's start location
-
-function DrawMap() {
+function DrawVisibleMap() {
   const centerOffset = TILE_DEGREES / 2; // used to get center of a tile !
   const bounds = map.getBounds(); // bounds of visible map
 
@@ -108,4 +112,17 @@ function DrawMap() {
   }
 }
 
-DrawMap();
+function SpawnCache(tile: Tile) {
+  const bounds = tile.getBounds();
+  const sw = bounds.getSouthWest();
+
+  if (luck([sw.lat, sw.lng].toString()) < CACHE_SPAWN_PROBABILITY) {
+    tile.pointValue = Math.floor(
+      luck([sw.lat, sw.lng, "initialValue"].toString()) * 100,
+    );
+  } else {
+    tile.pointValue = 0;
+  }
+}
+
+DrawVisibleMap();
