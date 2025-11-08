@@ -66,10 +66,10 @@ const _playerPoints = 0;
 statusPanelDiv.innerHTML = "No points yet...";
 
 function DrawTile(lat: number, lng: number) {
-  const centerOffset = TILE_DEGREES / 2;
+  //const centerOffset = TILE_DEGREES / 2;
   const bounds = leaflet.latLngBounds([
-    [lat - centerOffset, lng - centerOffset],
-    [lat + centerOffset, lng + centerOffset],
+    [lat, lng],
+    [lat + TILE_DEGREES, lng + TILE_DEGREES],
   ]);
 
   // Add a rectangle to the map to represent the cache
@@ -89,22 +89,20 @@ function DrawMap() {
 
   const sw = bounds.getSouthWest(); // bottom left corner of visible map
   const ne = bounds.getNorthEast(); // upper right corner of visible map
+  const center = bounds.getCenter(); // center of visible map (to center tiles cleanly)
 
-  const startLat = sw.lat;
-  const startLng = sw.lng;
+  const latOffset = (center.lat + centerOffset) % TILE_DEGREES; // how much to adjust tiles so center is centered on a tile
+  const lngOffset = (center.lng + centerOffset) % TILE_DEGREES; // as above
+
+  const startLat =
+    Math.floor((sw.lat - latOffset) / TILE_DEGREES) * TILE_DEGREES + latOffset;
+  const startLng =
+    Math.floor((sw.lng - lngOffset) / TILE_DEGREES) * TILE_DEGREES + lngOffset;
   const endLat = ne.lat;
   const endLng = ne.lng;
 
-  for (
-    let lat = startLat + centerOffset;
-    lat < endLat + centerOffset;
-    lat += TILE_DEGREES
-  ) {
-    for (
-      let lng = startLng + centerOffset;
-      lng < endLng + centerOffset;
-      lng += TILE_DEGREES
-    ) {
+  for (let lat = startLat; lat < endLat; lat += TILE_DEGREES) {
+    for (let lng = startLng; lng < endLng; lng += TILE_DEGREES) {
       DrawTile(lat, lng);
     }
   }
