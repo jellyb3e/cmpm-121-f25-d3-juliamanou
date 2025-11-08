@@ -1,0 +1,33 @@
+# D3: World of Bits
+
+## Game Design Vision
+
+In this game, much like in Pokemon Go, players move about the real world collecting and depositing items in locations that are only interactable when the player is sufficiently close to them. Like in 4096 and Threes, players will primarily be crafting tokens of higher and higher value by combining tokens of lesser value. In particular, only tokens of identical value can be combined, and the result is always a single token of twice the value of an ingredient token. In order to accommodate playing this game out in the real world (e.g. taking the campus shuttle to reach fresh locations), the game needs to run comfortably in a mobile browser and support gameplay across browser sessions (i.e. players can close the browser tab without losing progress in the game).
+
+## Technologies
+
+- TypeScript for most game code, little to no explicit HTML, and all CSS collected in common `style.css` file
+- Deno and Vite for building
+- GitHub Actions + GitHub Pages for deployment automation
+
+## Assignments
+
+### D3.a: Core mechanics (token collection and crafting)
+
+Key technical challenge: Can you assemble a map-based user interface using the Leaflet mapping framework?
+Key gameplay challenge: Can players collect and craft tokens from nearby locations to finally make one of sufficiently high value?
+
+#### Steps
+
+- [x] copy main.ts to reference.ts for future reference
+- [ ] delete everything in main.ts
+- [ ] put a basic leaflet map on the screen
+- [ ] draw the player's location on the map
+- [ ] draw a rectangle representing one cell on the map
+- [ ] use loops to draw a whole grid of cells on the map (only the size of the screen)
+- [ ] create a way to store information about a cell (token, token value)
+- [ ] display cell information on map with text
+- [ ] use luck function to set up token spawning
+- [ ] implement cell clicking to collect (if not holding a token or value != holding token value)
+      or combine (if value == holding token value)
+- [ ] implement collecting constraints (collect dist == 3)
