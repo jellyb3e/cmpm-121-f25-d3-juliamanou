@@ -127,12 +127,14 @@ function SpawnCache(tile: Tile) {
 }
 
 function AddCacheLabel(tile: Tile) {
-    const label = leaflet.divIcon({
-      className: "tile-label",
-      html: `${tile.pointValue}`,
-      iconSize: [30, 30],
-    });
-    leaflet.marker(tile.getCenter(), { icon: label, interactive: false }).addTo(map);
+  const label = leaflet.divIcon({
+    className: "tile-label",
+    html: `${tile.pointValue}`,
+    iconSize: [30, 30],
+  });
+  leaflet.marker(tile.getCenter(), { icon: label, interactive: false }).addTo(
+    map,
+  );
 }
 
 DrawVisibleMap();
