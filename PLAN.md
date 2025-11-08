@@ -20,11 +20,11 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 #### Steps
 
 - [x] copy main.ts to reference.ts for future reference
-- [ ] delete everything in main.ts
-- [ ] put a basic leaflet map on the screen
-- [ ] draw the player's location on the map
-- [ ] draw a rectangle representing one cell on the map
-- [ ] use loops to draw a whole grid of cells on the map (only the size of the screen)
+- [x] delete everything in main.ts
+- [x] put a basic leaflet map on the screen
+- [x] draw the player's location on the map
+- [x] draw a rectangle representing one cell on the map
+- [x] use loops to draw a whole grid of cells on the map (only the size of the screen)
 - [ ] create a way to store information about a cell (token, token value)
 - [ ] display cell information on map with text
 - [ ] use luck function to set up token spawning
