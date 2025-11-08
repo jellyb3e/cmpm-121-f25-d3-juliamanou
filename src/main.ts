@@ -83,8 +83,8 @@ function DrawTile(lat: number, lng: number) {
     fill: false,
     weight: 1,
   }) as Tile;
-  SpawnCache(rect);
   rect.addTo(map);
+  SpawnCache(rect);
 }
 
 function DrawVisibleMap() {
@@ -120,9 +120,19 @@ function SpawnCache(tile: Tile) {
     tile.pointValue = Math.floor(
       luck([sw.lat, sw.lng, "initialValue"].toString()) * 100,
     );
+    AddCacheLabel(tile);
   } else {
     tile.pointValue = 0;
   }
+}
+
+function AddCacheLabel(tile: Tile) {
+    const label = leaflet.divIcon({
+      className: "tile-label",
+      html: `${tile.pointValue}`,
+      iconSize: [30, 30],
+    });
+    leaflet.marker(tile.getCenter(), { icon: label, interactive: false }).addTo(map);
 }
 
 DrawVisibleMap();

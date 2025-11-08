@@ -27,7 +27,7 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] use loops to draw a whole grid of cells on the map (only the size of the screen)
 - [x] create a way to store information about a cell (token, token value)
 - [x] use luck function to set up token spawning
-- [ ] display cell information on map with text
+- [x] display cell information on map with text
 - [ ] implement cell clicking to collect (if not holding a token or value != holding token value)
       or combine (if value == holding token value)
 - [ ] implement collecting constraints (collect dist == 3)
