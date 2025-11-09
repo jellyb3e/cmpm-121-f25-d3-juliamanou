@@ -40,7 +40,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 // Tunable gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
-//const NEIGHBORHOOD_SIZE = 8;
+const COLLECT_DISTANCE = 3;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 
 // Create the map (element with id "map" is defined in index.html)
@@ -72,7 +72,6 @@ let currentToken = 0;
 statusPanelDiv.innerHTML = "no token in hand";
 
 function DrawTile(lat: number, lng: number) {
-  //const centerOffset = TILE_DEGREES / 2;
   const bounds = leaflet.latLngBounds([
     [lat, lng],
     [lat + TILE_DEGREES, lng + TILE_DEGREES],
@@ -143,7 +142,9 @@ function AddCacheLabel(tile: Tile) {
 
 function AddClickEvent(tile: Tile) {
   tile.on("click", function () {
-    if (tile.pointValue == currentToken) {
+    if (!CanCollect(tile)) return;
+
+    if (tile.pointValue != 0 && tile.pointValue == currentToken) {
       // combine
       tile.pointValue = 0;
       currentToken *= 2;
@@ -164,7 +165,7 @@ function AddClickEvent(tile: Tile) {
 }
 
 function UpdateTileLabel(tile: Tile) {
-  const newText = tile.pointValue === 0 ? "" : `${tile.pointValue}`;
+  const newText = tile.pointValue == 0 ? "" : `${tile.pointValue}`;
   const newIcon = leaflet.divIcon({
     className: "tile-label",
     html: newText,
@@ -172,6 +173,17 @@ function UpdateTileLabel(tile: Tile) {
   });
 
   tile.label.setIcon(newIcon);
+}
+
+function CanCollect(tile: Tile) {
+  const tileCenter = tile.getBounds().getCenter();
+  const collectDistDegrees = COLLECT_DISTANCE * TILE_DEGREES;
+
+  const latDist = CLASSROOM_LATLNG.lat - tileCenter.lat;
+  const lngDist = CLASSROOM_LATLNG.lng - tileCenter.lng;
+  const distanceSquared = (latDist * latDist) + (lngDist * lngDist);
+
+  return distanceSquared <= (collectDistDegrees * collectDistDegrees);
 }
 
 DrawVisibleMap();

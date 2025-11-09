@@ -32,4 +32,4 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] implement inventory -- collect if not holding a token or value != holding token value
 - [x] implement combine mechanic (if value == holding token value)
 - [x] visually change cells on collect or combine
-- [ ] implement collecting constraints (collect dist == 3)
+- [x] implement collecting constraints (collect dist == 3)
