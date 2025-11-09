@@ -31,6 +31,9 @@ const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
 document.body.append(statusPanelDiv);
 
+const winStatusDiv = document.createElement("div");
+document.body.append(winStatusDiv);
+
 // Our classroom location
 const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
@@ -40,8 +43,10 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 // Tunable gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
-const COLLECT_DISTANCE = 3;
+const COLLECT_DISTANCE = 30;
 const CACHE_SPAWN_PROBABILITY = 0.1;
+const GOAL_TOKEN = 4;
+const MAX_TOKEN_SIZE = 2;
 
 // Create the map (element with id "map" is defined in index.html)
 const map = leaflet.map(mapDiv, {
@@ -118,7 +123,7 @@ function SpawnCache(cache: Cache) {
 
   if (luck([sw.lat, sw.lng].toString()) < CACHE_SPAWN_PROBABILITY) {
     cache.pointValue = Math.floor(
-      luck([sw.lat, sw.lng, "initialValue"].toString()) * 100,
+      luck([sw.lat, sw.lng, "initialValue"].toString()) * (MAX_TOKEN_SIZE + 1),
     );
   } else {
     cache.pointValue = 0;
@@ -153,23 +158,30 @@ function AddClickEvent(cache: Cache) {
     if (!CanCollect(cache)) return;
 
     if (cache.pointValue != 0 && cache.pointValue == currentToken) {
-      // combine
-      cache.pointValue = 0;
-      currentToken *= 2;
-      statusPanelDiv.innerHTML = `${
-        currentToken / 2
-      } token combined to create ${currentToken} token`;
+      CombineTokens(cache);
+      CheckWin();
     } else {
-      // swap
-      const temp = cache.pointValue;
-      cache.pointValue = currentToken;
-      currentToken = temp;
-      statusPanelDiv.innerHTML = (currentToken == 0)
-        ? "no token in hand"
-        : `${currentToken} token in hand`;
+      SwapTokens(cache);
     }
     UpdateCacheLabel(cache);
   });
+}
+
+function CombineTokens(cache: Cache) {
+  cache.pointValue = 0;
+  currentToken *= 2;
+  statusPanelDiv.innerHTML = `${
+    currentToken / 2
+    } token combined to create ${currentToken} token`;
+}
+
+function SwapTokens(cache: Cache) {
+  const temp = cache.pointValue;
+  cache.pointValue = currentToken;
+  currentToken = temp;
+  statusPanelDiv.innerHTML = (currentToken == 0)
+    ? "no token in hand"
+    : `${currentToken} token in hand`;
 }
 
 function CanCollect(cache: Cache) {
@@ -181,6 +193,10 @@ function CanCollect(cache: Cache) {
   const distanceSquared = (latDist * latDist) + (lngDist * lngDist);
 
   return distanceSquared <= (collectDistDegrees * collectDistDegrees);
+}
+
+function CheckWin() {
+  if (currentToken == GOAL_TOKEN) { winStatusDiv.innerHTML = `token of value ${GOAL_TOKEN} reached. you win !` }
 }
 
 DrawVisibleMap();
