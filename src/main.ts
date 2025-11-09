@@ -172,7 +172,7 @@ function CombineTokens(cache: Cache) {
   currentToken *= 2;
   statusPanelDiv.innerHTML = `${
     currentToken / 2
-    } token combined to create ${currentToken} token`;
+  } token combined to create ${currentToken} token`;
 }
 
 function SwapTokens(cache: Cache) {
@@ -196,7 +196,9 @@ function CanCollect(cache: Cache) {
 }
 
 function CheckWin() {
-  if (currentToken == GOAL_TOKEN) { winStatusDiv.innerHTML = `token of value ${GOAL_TOKEN} reached. you win !` }
+  if (currentToken == GOAL_TOKEN) {
+    winStatusDiv.innerHTML = `token of value ${GOAL_TOKEN} reached. you win !`;
+  }
 }
 
 DrawVisibleMap();
