@@ -14,6 +14,7 @@ import luck from "./_luck.ts";
 // Create Tile interface
 interface Tile extends leaflet.Rectangle {
   pointValue: number;
+  label: leaflet.Marker;
 }
 
 // Create basic UI elements
@@ -66,9 +67,9 @@ const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
 playerMarker.bindTooltip("That's you!");
 playerMarker.addTo(map);
 
-// Display the player's points
-const _playerPoints = 0;
-statusPanelDiv.innerHTML = "No points yet...";
+// Display the player's current token
+let currentToken = 0;
+statusPanelDiv.innerHTML = "no token in hand";
 
 function DrawTile(lat: number, lng: number) {
   //const centerOffset = TILE_DEGREES / 2;
@@ -80,7 +81,7 @@ function DrawTile(lat: number, lng: number) {
   // Add a rectangle to the map to represent the cache
   const rect = leaflet.rectangle(bounds, {
     color: "gray",
-    fill: false,
+    fillOpacity: 0,
     weight: 1,
   }) as Tile;
   rect.addTo(map);
@@ -120,21 +121,57 @@ function SpawnCache(tile: Tile) {
     tile.pointValue = Math.floor(
       luck([sw.lat, sw.lng, "initialValue"].toString()) * 100,
     );
-    AddCacheLabel(tile);
   } else {
     tile.pointValue = 0;
   }
+  AddCacheLabel(tile);
+  AddClickEvent(tile);
 }
 
 function AddCacheLabel(tile: Tile) {
+  const labelText = tile.pointValue == 0 ? "" : `${tile.pointValue}`;
   const label = leaflet.divIcon({
     className: "tile-label",
-    html: `${tile.pointValue}`,
+    html: labelText,
     iconSize: [30, 30],
   });
-  leaflet.marker(tile.getCenter(), { icon: label, interactive: false }).addTo(
-    map,
-  );
+  tile.label = leaflet.marker(tile.getCenter(), {
+    icon: label,
+    interactive: false,
+  }).addTo(map);
+}
+
+function AddClickEvent(tile: Tile) {
+  tile.on("click", function () {
+    if (tile.pointValue == currentToken) {
+      // combine
+      tile.pointValue = 0;
+      currentToken *= 2;
+      statusPanelDiv.innerHTML = `${
+        currentToken / 2
+      } token combined to create ${currentToken} token`;
+    } else {
+      // swap
+      const temp = tile.pointValue;
+      tile.pointValue = currentToken;
+      currentToken = temp;
+      statusPanelDiv.innerHTML = (currentToken == 0)
+        ? "no token in hand"
+        : `${currentToken} token in hand`;
+    }
+    UpdateTileLabel(tile);
+  });
+}
+
+function UpdateTileLabel(tile: Tile) {
+  const newText = tile.pointValue === 0 ? "" : `${tile.pointValue}`;
+  const newIcon = leaflet.divIcon({
+    className: "tile-label",
+    html: newText,
+    iconSize: [30, 30],
+  });
+
+  tile.label.setIcon(newIcon);
 }
 
 DrawVisibleMap();
