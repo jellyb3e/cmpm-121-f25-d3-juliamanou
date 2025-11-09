@@ -11,8 +11,8 @@ import "./_leafletWorkaround.ts"; // fixes for missing Leaflet images
 // Import our luck function
 import luck from "./_luck.ts";
 
-// Create Tile interface
-interface Tile extends leaflet.Rectangle {
+// Create Cache interface
+interface Cache extends leaflet.Rectangle {
   pointValue: number;
   label: leaflet.Marker;
 }
@@ -71,31 +71,31 @@ playerMarker.addTo(map);
 let currentToken = 0;
 statusPanelDiv.innerHTML = "no token in hand";
 
-function DrawTile(lat: number, lng: number) {
+function DrawCache(lat: number, lng: number) {
   const bounds = leaflet.latLngBounds([
     [lat, lng],
     [lat + TILE_DEGREES, lng + TILE_DEGREES],
   ]);
 
   // Add a rectangle to the map to represent the cache
-  const rect = leaflet.rectangle(bounds, {
+  const cache = leaflet.rectangle(bounds, {
     color: "gray",
     fillOpacity: 0,
     weight: 1,
-  }) as Tile;
-  rect.addTo(map);
-  SpawnCache(rect);
+  }) as Cache;
+  cache.addTo(map);
+  SpawnCache(cache);
 }
 
 function DrawVisibleMap() {
-  const centerOffset = TILE_DEGREES / 2; // used to get center of a tile !
+  const centerOffset = TILE_DEGREES / 2; // used to get center of a cache !
   const bounds = map.getBounds(); // bounds of visible map
 
   const sw = bounds.getSouthWest(); // bottom left corner of visible map
   const ne = bounds.getNorthEast(); // upper right corner of visible map
-  const center = bounds.getCenter(); // center of visible map (to center tiles cleanly)
+  const center = bounds.getCenter(); // center of visible map (to center caches cleanly)
 
-  const latOffset = (center.lat + centerOffset) % TILE_DEGREES; // how much to adjust tiles so center is centered on a tile
+  const latOffset = (center.lat + centerOffset) % TILE_DEGREES; // how much to adjust caches so center is centered on a cache
   const lngOffset = (center.lng + centerOffset) % TILE_DEGREES; // as above
 
   const startLat =
@@ -107,80 +107,77 @@ function DrawVisibleMap() {
 
   for (let lat = startLat; lat < endLat; lat += TILE_DEGREES) {
     for (let lng = startLng; lng < endLng; lng += TILE_DEGREES) {
-      DrawTile(lat, lng);
+      DrawCache(lat, lng);
     }
   }
 }
 
-function SpawnCache(tile: Tile) {
-  const bounds = tile.getBounds();
+function SpawnCache(cache: Cache) {
+  const bounds = cache.getBounds();
   const sw = bounds.getSouthWest();
 
   if (luck([sw.lat, sw.lng].toString()) < CACHE_SPAWN_PROBABILITY) {
-    tile.pointValue = Math.floor(
+    cache.pointValue = Math.floor(
       luck([sw.lat, sw.lng, "initialValue"].toString()) * 100,
     );
   } else {
-    tile.pointValue = 0;
+    cache.pointValue = 0;
   }
-  AddCacheLabel(tile);
-  AddClickEvent(tile);
+  CreateCacheLabel(cache);
+  AddClickEvent(cache);
 }
 
-function AddCacheLabel(tile: Tile) {
-  const labelText = tile.pointValue == 0 ? "" : `${tile.pointValue}`;
-  const label = leaflet.divIcon({
-    className: "tile-label",
-    html: labelText,
-    iconSize: [30, 30],
-  });
-  tile.label = leaflet.marker(tile.getCenter(), {
-    icon: label,
+function CreateCacheLabel(cache: Cache) {
+  cache.label = leaflet.marker(cache.getCenter(), {
+    icon: SetLabel(cache),
     interactive: false,
   }).addTo(map);
 }
 
-function AddClickEvent(tile: Tile) {
-  tile.on("click", function () {
-    if (!CanCollect(tile)) return;
+function UpdateCacheLabel(cache: Cache) {
+  cache.label.setIcon(SetLabel(cache));
+}
 
-    if (tile.pointValue != 0 && tile.pointValue == currentToken) {
+function SetLabel(cache: Cache) {
+  const labelText = cache.pointValue == 0 ? "" : `${cache.pointValue}`;
+  const label = leaflet.divIcon({
+    className: "cache-label",
+    html: labelText,
+    iconSize: [30, 30],
+  });
+  return label;
+}
+
+function AddClickEvent(cache: Cache) {
+  cache.on("click", function () {
+    if (!CanCollect(cache)) return;
+
+    if (cache.pointValue != 0 && cache.pointValue == currentToken) {
       // combine
-      tile.pointValue = 0;
+      cache.pointValue = 0;
       currentToken *= 2;
       statusPanelDiv.innerHTML = `${
         currentToken / 2
       } token combined to create ${currentToken} token`;
     } else {
       // swap
-      const temp = tile.pointValue;
-      tile.pointValue = currentToken;
+      const temp = cache.pointValue;
+      cache.pointValue = currentToken;
       currentToken = temp;
       statusPanelDiv.innerHTML = (currentToken == 0)
         ? "no token in hand"
         : `${currentToken} token in hand`;
     }
-    UpdateTileLabel(tile);
+    UpdateCacheLabel(cache);
   });
 }
 
-function UpdateTileLabel(tile: Tile) {
-  const newText = tile.pointValue == 0 ? "" : `${tile.pointValue}`;
-  const newIcon = leaflet.divIcon({
-    className: "tile-label",
-    html: newText,
-    iconSize: [30, 30],
-  });
-
-  tile.label.setIcon(newIcon);
-}
-
-function CanCollect(tile: Tile) {
-  const tileCenter = tile.getBounds().getCenter();
+function CanCollect(cache: Cache) {
+  const cacheCenter = cache.getBounds().getCenter();
   const collectDistDegrees = COLLECT_DISTANCE * TILE_DEGREES;
 
-  const latDist = CLASSROOM_LATLNG.lat - tileCenter.lat;
-  const lngDist = CLASSROOM_LATLNG.lng - tileCenter.lng;
+  const latDist = CLASSROOM_LATLNG.lat - cacheCenter.lat;
+  const lngDist = CLASSROOM_LATLNG.lng - cacheCenter.lng;
   const distanceSquared = (latDist * latDist) + (lngDist * lngDist);
 
   return distanceSquared <= (collectDistDegrees * collectDistDegrees);
