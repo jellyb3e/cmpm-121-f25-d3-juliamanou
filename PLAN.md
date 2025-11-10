@@ -17,7 +17,7 @@ In this game, much like in Pokemon Go, players move about the real world collect
 Key technical challenge: Can you assemble a map-based user interface using the Leaflet mapping framework?
 Key gameplay challenge: Can players collect and craft tokens from nearby locations to finally make one of sufficiently high value?
 
-#### Steps
+#### D3.a Steps
 
 - [x] copy main.ts to reference.ts for future reference
 - [x] delete everything in main.ts
@@ -33,3 +33,20 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] implement combine mechanic (if value == holding token value)
 - [x] visually change cells on collect or combine
 - [x] implement collecting constraints (collect dist == 3)
+
+### D3.b: Globe-spanning gameplay
+
+Key technical challenge: Can you set up your implementation to support gameplay anywhere in the real world, not just locations near our classroom?
+Key gameplay challenge: Can players craft an even higher value token by moving to other locations to get access to additional crafting materials?
+
+#### D3.b Steps
+
+- [ ] write updated plan.md for D3.b steps
+- [ ] identify any places for refactoring before making new changes
+- [ ] change current cache drawing algorithm so 0,0 is centered on a cache and player position is always centered on a cache
+- [ ] add up/down/left/right buttons to the screen
+- [ ] link buttons to player icon movement by 1 grid space
+- [ ] add cell interface that just hold i,j pairs
+- [ ] add functions for converting between cells and bounds
+- [ ] add cache spawning that triggers whenever the player stops moving (using map.on("moveend"), etc)
+- [ ] clear map before redrawing
