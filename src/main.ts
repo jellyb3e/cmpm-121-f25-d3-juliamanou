@@ -17,6 +17,28 @@ interface Cache extends leaflet.Rectangle {
   label: leaflet.Marker;
 }
 
+// Create Cell interface
+interface Cell {
+  i: number;
+  j: number;
+}
+
+// Cell conversion functions
+function CellToLatLng(cell: Cell) {
+  const lat = cell.i / TILE_DEGREES;
+  const lng = cell.j / TILE_DEGREES;
+  return { lat, lng };
+}
+
+function LatLngToCell(latlng: { lat: number; lng: number }) {
+  const i = latlng.lat / TILE_DEGREES;
+  const j = latlng.lng / TILE_DEGREES;
+  return { i: i, j: j };
+}
+
+CellToLatLng({ i: 1, j: 1 });
+LatLngToCell({ lat: 1, lng: 1 });
+
 // Create basic UI elements
 
 const controlPanelDiv = document.createElement("div");
@@ -77,9 +99,10 @@ let currentToken = 0;
 statusPanelDiv.innerHTML = "no token in hand";
 
 function DrawCache(lat: number, lng: number) {
+  const centerOffset = TILE_DEGREES / 2;
   const bounds = leaflet.latLngBounds([
-    [lat, lng],
-    [lat + TILE_DEGREES, lng + TILE_DEGREES],
+    [lat - centerOffset, lng - centerOffset],
+    [lat + centerOffset, lng + centerOffset],
   ]);
 
   // Add a rectangle to the map to represent the cache
