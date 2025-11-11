@@ -45,7 +45,8 @@ Key gameplay challenge: Can players craft an even higher value token by moving t
 - [x] identify any places for refactoring before making new changes
 - [x] add cell interface that just hold i,j pairs
 - [x] add functions for converting between cells and bounds
-- [ ] change current cache drawing algorithm so 0,0 is centered on a cache and player position is always centered on a cache
+- [x] change current cache drawing algorithm so 0,0 is centered on a cache
+- [ ] make it so player position is always centered on a cache
 - [ ] add up/down/left/right buttons to the screen
 - [ ] link buttons to player icon movement by 1 grid space
 - [ ] add cache spawning that triggers whenever the player stops moving (using map.on("moveend"), etc)

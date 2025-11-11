@@ -23,22 +23,6 @@ interface Cell {
   j: number;
 }
 
-// Cell conversion functions
-function CellToLatLng(cell: Cell) {
-  const lat = cell.i / TILE_DEGREES;
-  const lng = cell.j / TILE_DEGREES;
-  return { lat, lng };
-}
-
-function LatLngToCell(latlng: { lat: number; lng: number }) {
-  const i = latlng.lat / TILE_DEGREES;
-  const j = latlng.lng / TILE_DEGREES;
-  return { i: i, j: j };
-}
-
-CellToLatLng({ i: 1, j: 1 });
-LatLngToCell({ lat: 1, lng: 1 });
-
 // Create basic UI elements
 
 const controlPanelDiv = document.createElement("div");
@@ -61,6 +45,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
   -122.05703507501151,
 );
+const ORIGIN = leaflet.latLng(0,0);
 
 // Tunable gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
@@ -72,7 +57,7 @@ const MAX_TOKEN_SIZE = 2;
 
 // Create the map (element with id "map" is defined in index.html)
 const map = leaflet.map(mapDiv, {
-  center: CLASSROOM_LATLNG,
+  center: ORIGIN,
   zoom: GAMEPLAY_ZOOM_LEVEL,
   minZoom: GAMEPLAY_ZOOM_LEVEL,
   maxZoom: GAMEPLAY_ZOOM_LEVEL,
@@ -90,7 +75,7 @@ leaflet
   .addTo(map);
 
 // Add a marker to represent the player
-const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
+const playerMarker = leaflet.marker(ORIGIN);
 playerMarker.bindTooltip("That's you!");
 playerMarker.addTo(map);
 
@@ -121,15 +106,14 @@ function DrawVisibleMap() {
 
   const sw = bounds.getSouthWest(); // bottom left corner of visible map
   const ne = bounds.getNorthEast(); // upper right corner of visible map
-  const center = bounds.getCenter(); // center of visible map (to center caches cleanly)
 
-  const latOffset = (center.lat + centerOffset) % TILE_DEGREES; // how much to adjust caches so center is centered on a cache
-  const lngOffset = (center.lng + centerOffset) % TILE_DEGREES; // as above
+  // TODO: SHIFT starts and ends so they align 0,0 centrally
 
-  const startLat =
-    Math.floor((sw.lat - latOffset) / TILE_DEGREES) * TILE_DEGREES + latOffset;
-  const startLng =
-    Math.floor((sw.lng - lngOffset) / TILE_DEGREES) * TILE_DEGREES + lngOffset;
+  const latShift = sw.lat % TILE_DEGREES;
+  const lngShift = sw.lng % TILE_DEGREES;
+
+  const startLat = sw.lat - latShift;
+  const startLng = sw.lng - lngShift;
   const endLat = ne.lat;
   const endLng = ne.lng;
 
@@ -167,7 +151,9 @@ function UpdateCacheLabel(cache: Cache) {
 }
 
 function SetLabel(cache: Cache) {
-  const labelText = cache.pointValue == 0 ? "" : `${cache.pointValue}`;
+  const center = cache.getCenter();
+  const labelText = `${ToCell(center.lat).toFixed(2)}, ${ToCell(center.lng).toFixed(2)}`;
+  //const labelText = cache.pointValue == 0 ? "" : `${cache.pointValue}`;
   const label = leaflet.divIcon({
     className: "cache-label",
     html: labelText,
@@ -223,5 +209,25 @@ function CheckWin() {
     winStatusDiv.innerHTML = `token of value ${GOAL_TOKEN} reached. you win !`;
   }
 }
+
+// Cell conversion functions
+function CellToLatLng(cell: Cell) {
+  const lat = cell.i * TILE_DEGREES;
+  const lng = cell.j * TILE_DEGREES;
+  return { lat, lng };
+}
+
+function ToCell(coord: number) {
+  return (coord / TILE_DEGREES);
+}
+
+function LatLngToCell(latlng: { lat: number; lng: number }) {
+  const i = latlng.lat / TILE_DEGREES;
+  const j = latlng.lng / TILE_DEGREES;
+  return { i: i, j: j };
+}
+
+CellToLatLng({ i: 1, j: 1 });
+LatLngToCell({ lat: 1, lng: 1 });
 
 DrawVisibleMap();
