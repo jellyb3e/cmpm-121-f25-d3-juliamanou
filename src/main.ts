@@ -62,6 +62,9 @@ const MAX_TOKEN_SIZE = 2;
 // Create the map (element with id "map" is defined in index.html)
 const map = CreateMap();
 
+// Create cache layer group to easily clear for redrawing
+const cacheLayerGroup = leaflet.layerGroup().addTo(map);
+
 // Add a marker to represent the player
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
 playerMarker.bindTooltip("That's you!");
@@ -91,6 +94,7 @@ function CreateMap(): leaflet.Map {
     .addTo(map);
 
   map.on("moveend", () => {
+    cacheLayerGroup.clearLayers();
     DrawVisibleMap();
   });
 
@@ -110,7 +114,7 @@ function DrawCache(lat: number, lng: number) {
     fillOpacity: 0,
     weight: 1,
   }) as Cache;
-  cache.addTo(map);
+  cacheLayerGroup.addLayer(cache);
   SpawnCache(cache);
 }
 
@@ -158,7 +162,8 @@ function CreateCacheLabel(cache: Cache) {
   cache.label = leaflet.marker(cache.getCenter(), {
     icon: SetLabel(cache),
     interactive: false,
-  }).addTo(map);
+  });
+  cacheLayerGroup.addLayer(cache.label);
 }
 
 function UpdateCacheLabel(cache: Cache) {

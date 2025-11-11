@@ -50,4 +50,4 @@ Key gameplay challenge: Can players craft an even higher value token by moving t
 - [x] add up/down/left/right buttons to the screen
 - [x] link buttons to player icon movement by 1 grid space
 - [x] add cache spawning that triggers whenever the player stops moving (using map.on("moveend"), etc)
-- [ ] clear map before redrawing
+- [x] clear map before redrawing
