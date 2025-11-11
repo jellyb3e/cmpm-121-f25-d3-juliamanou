@@ -90,6 +90,10 @@ function CreateMap(): leaflet.Map {
     })
     .addTo(map);
 
+  map.on("moveend", () => {
+    DrawVisibleMap();
+  });
+
   return map;
 }
 
@@ -136,11 +140,12 @@ function DrawVisibleMap() {
 
 function SpawnCache(cache: Cache) {
   const bounds = cache.getBounds();
-  const sw = bounds.getSouthWest();
+  const swCell = LatLngToCell(bounds.getSouthWest());
 
-  if (luck([sw.lat, sw.lng].toString()) < CACHE_SPAWN_PROBABILITY) {
+  if (luck([swCell.i, swCell.j].toString()) < CACHE_SPAWN_PROBABILITY) {
     cache.pointValue = Math.floor(
-      luck([sw.lat, sw.lng, "initialValue"].toString()) * (MAX_TOKEN_SIZE + 1),
+      luck([swCell.i, swCell.j, "initialValue"].toString()) *
+        (MAX_TOKEN_SIZE + 1),
     );
   } else {
     cache.pointValue = 0;
@@ -282,6 +287,7 @@ function MovePlayer(delta: Cell) {
   playerMarker.setLatLng(
     leaflet.latLng(lat + deltaLatLng.lat, lng + deltaLatLng.lng),
   );
+  map.panTo(playerMarker.getLatLng());
 }
 
 function CreateAndAddDiv(id: string) {
