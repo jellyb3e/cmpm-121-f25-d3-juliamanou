@@ -29,6 +29,28 @@ const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
 document.body.append(controlPanelDiv);
 
+const upButton = document.createElement("button");
+upButton.textContent = "↑";
+const downButton = document.createElement("button");
+downButton.textContent = "↓";
+const leftButton = document.createElement("button");
+leftButton.textContent = "←";
+const rightButton = document.createElement("button");
+rightButton.textContent = "→";
+
+const middleControlsDiv = document.createElement("div");
+middleControlsDiv.id = "middle-controls";
+middleControlsDiv.appendChild(upButton);
+middleControlsDiv.appendChild(downButton);
+
+const arrowKeysDiv = document.createElement("div");
+arrowKeysDiv.id = "arrow-keys";
+arrowKeysDiv.appendChild(leftButton);
+arrowKeysDiv.appendChild(middleControlsDiv);
+arrowKeysDiv.appendChild(rightButton);
+
+controlPanelDiv.appendChild(arrowKeysDiv);
+
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
 document.body.append(mapDiv);

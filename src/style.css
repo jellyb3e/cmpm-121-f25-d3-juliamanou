@@ -1,7 +1,3 @@
-#controlPanel {
-  padding: 1rem;
-}
-
 #statusPanel {
   padding: 1rem;
 }
@@ -13,4 +9,32 @@
 
 .cache-label {
   text-align: center;
+}
+
+#controlPanel {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+}
+
+#arrow-keys {
+  display: grid;
+  grid-template-columns: 50px 50px 50px;
+  align-items: center;
+  justify-items: center;
+  gap: 5px;
+}
+
+#middle-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+#arrow-keys button {
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+  cursor: pointer;
 }
