@@ -48,6 +48,6 @@ Key gameplay challenge: Can players craft an even higher value token by moving t
 - [x] change current cache drawing algorithm so 0,0 is centered on a cache
 - [x] make it so player position is always centered on a cache
 - [x] add up/down/left/right buttons to the screen
-- [ ] link buttons to player icon movement by 1 grid space
+- [x] link buttons to player icon movement by 1 grid space
 - [ ] add cache spawning that triggers whenever the player stops moving (using map.on("moveend"), etc)
 - [ ] clear map before redrawing

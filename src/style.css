@@ -1,4 +1,4 @@
-#statusPanel {
+#statusPanel, #winStatus {
   padding: 1rem;
 }
 
@@ -17,22 +17,7 @@
   left: 20px;
 }
 
-#arrow-keys {
-  display: grid;
-  grid-template-columns: 50px 50px 50px;
-  align-items: center;
-  justify-items: center;
-  gap: 5px;
-}
-
-#middle-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-#arrow-keys button {
+button {
   width: 50px;
   height: 50px;
   font-size: 20px;

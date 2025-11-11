@@ -23,44 +23,27 @@ interface Cell {
   j: number;
 }
 
+// Create Arrow interface for buttons
+interface Arrow {
+  direction: string;
+  symbol: string;
+  delta: Cell;
+}
+
+const directions: Arrow[] = [
+  { direction: "up", symbol: "↑", delta: { i: 1, j: 0 } },
+  { direction: "down", symbol: "↓", delta: { i: -1, j: 0 } },
+  { direction: "left", symbol: "←", delta: { i: 0, j: -1 } },
+  { direction: "right", symbol: "→", delta: { i: 0, j: 1 } },
+];
+
 // Create basic UI elements
 
-const controlPanelDiv = document.createElement("div");
-controlPanelDiv.id = "controlPanel";
-document.body.append(controlPanelDiv);
-
-const upButton = document.createElement("button");
-upButton.textContent = "↑";
-const downButton = document.createElement("button");
-downButton.textContent = "↓";
-const leftButton = document.createElement("button");
-leftButton.textContent = "←";
-const rightButton = document.createElement("button");
-rightButton.textContent = "→";
-
-const middleControlsDiv = document.createElement("div");
-middleControlsDiv.id = "middle-controls";
-middleControlsDiv.appendChild(upButton);
-middleControlsDiv.appendChild(downButton);
-
-const arrowKeysDiv = document.createElement("div");
-arrowKeysDiv.id = "arrow-keys";
-arrowKeysDiv.appendChild(leftButton);
-arrowKeysDiv.appendChild(middleControlsDiv);
-arrowKeysDiv.appendChild(rightButton);
-
-controlPanelDiv.appendChild(arrowKeysDiv);
-
-const mapDiv = document.createElement("div");
-mapDiv.id = "map";
-document.body.append(mapDiv);
-
-const statusPanelDiv = document.createElement("div");
-statusPanelDiv.id = "statusPanel";
-document.body.append(statusPanelDiv);
-
-const winStatusDiv = document.createElement("div");
-document.body.append(winStatusDiv);
+CreateAndAddDiv("controlPanel");
+CreateArrowKeys();
+CreateAndAddDiv("map");
+CreateAndAddDiv("statusPanel");
+CreateAndAddDiv("winStatus");
 
 // Our classroom location
 const CLASSROOM_LATLNG = leaflet.latLng(
@@ -71,38 +54,44 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 // Tunable gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
-const COLLECT_DISTANCE = 30;
+const COLLECT_DISTANCE = 2;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 const GOAL_TOKEN = 4;
 const MAX_TOKEN_SIZE = 2;
 
 // Create the map (element with id "map" is defined in index.html)
-const map = leaflet.map(mapDiv, {
-  center: CLASSROOM_LATLNG,
-  zoom: GAMEPLAY_ZOOM_LEVEL,
-  minZoom: GAMEPLAY_ZOOM_LEVEL,
-  maxZoom: GAMEPLAY_ZOOM_LEVEL,
-  zoomControl: false,
-  scrollWheelZoom: false,
-});
-
-// Populate the map with a background tile layer
-leaflet
-  .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  })
-  .addTo(map);
+const map = CreateMap();
 
 // Add a marker to represent the player
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
 playerMarker.bindTooltip("That's you!");
 playerMarker.addTo(map);
 
-// Display the player's current token
+// Player's current token
 let currentToken = 0;
-statusPanelDiv.innerHTML = "no token in hand";
+
+function CreateMap(): leaflet.Map {
+  const mapDiv = document.getElementById("map")!;
+  const map = leaflet.map(mapDiv, {
+    center: CLASSROOM_LATLNG,
+    zoom: GAMEPLAY_ZOOM_LEVEL,
+    minZoom: GAMEPLAY_ZOOM_LEVEL,
+    maxZoom: GAMEPLAY_ZOOM_LEVEL,
+    zoomControl: false,
+    scrollWheelZoom: false,
+  });
+
+  // Populate the map with a background tile layer
+  leaflet
+    .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    })
+    .addTo(map);
+
+  return map;
+}
 
 function DrawCache(lat: number, lng: number) {
   const centerOffset = TILE_DEGREES / 2;
@@ -195,41 +184,51 @@ function AddClickEvent(cache: Cache) {
   });
 }
 
+function UpdateStatus(action: "" | "combine" = "") {
+  const statusPanelDiv = document.getElementById("statusPanel")!;
+
+  if (action === "combine") {
+    statusPanelDiv.innerHTML = `two ${currentToken} tokens combined to create ${
+      currentToken * 2
+    } token`;
+  } else {
+    statusPanelDiv.innerHTML = (currentToken === 0)
+      ? "no token in hand"
+      : `${currentToken} token in hand`;
+  }
+}
+
 function CombineTokens(cache: Cache) {
   cache.pointValue = 0;
+  UpdateStatus("combine");
   currentToken *= 2;
-  statusPanelDiv.innerHTML = `${
-    currentToken / 2
-  } token combined to create ${currentToken} token`;
 }
 
 function SwapTokens(cache: Cache) {
   const temp = cache.pointValue;
   cache.pointValue = currentToken;
   currentToken = temp;
-  statusPanelDiv.innerHTML = (currentToken == 0)
-    ? "no token in hand"
-    : `${currentToken} token in hand`;
+  UpdateStatus();
 }
 
 function CanCollect(cache: Cache) {
-  const cacheCenter = cache.getBounds().getCenter();
-  const collectDistDegrees = COLLECT_DISTANCE * TILE_DEGREES;
+  const cacheCenter = LatLngToCell(cache.getBounds().getCenter());
 
-  const latDist = CLASSROOM_LATLNG.lat - cacheCenter.lat;
-  const lngDist = CLASSROOM_LATLNG.lng - cacheCenter.lng;
-  const distanceSquared = (latDist * latDist) + (lngDist * lngDist);
+  const playerPos = LatLngToCell(playerMarker.getLatLng());
+  const iDist = Math.abs(playerPos.i - cacheCenter.i);
+  const jDist = Math.abs(playerPos.j - cacheCenter.j);
 
-  return distanceSquared <= (collectDistDegrees * collectDistDegrees);
+  return iDist <= COLLECT_DISTANCE && jDist <= COLLECT_DISTANCE;
 }
 
 function CheckWin() {
+  const winStatusDiv = document.getElementById("winStatus")!;
+
   if (currentToken == GOAL_TOKEN) {
     winStatusDiv.innerHTML = `token of value ${GOAL_TOKEN} reached. you win !`;
   }
 }
 
-/*
 function LatLngToCell(latlng: leaflet.LatLng): Cell {
   return {
     i: Math.floor(latlng.lat / TILE_DEGREES),
@@ -240,9 +239,9 @@ function LatLngToCell(latlng: leaflet.LatLng): Cell {
 function CellToLatLng(cell: Cell): leaflet.LatLng {
   return leaflet.latLng(cell.i * TILE_DEGREES, cell.j * TILE_DEGREES);
 }
-*/
 
 function GetNearestCellCenter(latlng: leaflet.LatLng) {
+  const centerOffset = TILE_DEGREES / 2;
   let latShift = latlng.lat % TILE_DEGREES;
   let lngShift = latlng.lng % TILE_DEGREES;
 
@@ -250,8 +249,8 @@ function GetNearestCellCenter(latlng: leaflet.LatLng) {
   if (lngShift < 0) lngShift += TILE_DEGREES;
 
   return leaflet.latLng(
-    latlng.lat - latShift + TILE_DEGREES / 2,
-    latlng.lng - lngShift + TILE_DEGREES / 2,
+    latlng.lat - latShift + centerOffset,
+    latlng.lng - lngShift + centerOffset,
   );
 }
 
@@ -259,5 +258,38 @@ function CenterMarker() {
   playerMarker.setLatLng(GetNearestCellCenter(playerMarker.getLatLng()));
 }
 
+function CreateArrowKeys() {
+  const arrowKeysDiv = document.createElement("div");
+  const controlPanelDiv = document.getElementById("controlPanel")!;
+  controlPanelDiv.appendChild(arrowKeysDiv);
+
+  for (const dir of directions) {
+    const button = document.createElement("button");
+    button.textContent = dir.symbol;
+
+    button.addEventListener("click", () => {
+      MovePlayer(dir.delta);
+    });
+
+    arrowKeysDiv.appendChild(button);
+  }
+}
+
+function MovePlayer(delta: Cell) {
+  const lat = playerMarker.getLatLng().lat;
+  const lng = playerMarker.getLatLng().lng;
+  const deltaLatLng = CellToLatLng(delta);
+  playerMarker.setLatLng(
+    leaflet.latLng(lat + deltaLatLng.lat, lng + deltaLatLng.lng),
+  );
+}
+
+function CreateAndAddDiv(id: string) {
+  const div = document.createElement("div");
+  div.id = id;
+  document.body.append(div);
+}
+
+UpdateStatus();
 DrawVisibleMap();
 CenterMarker();
