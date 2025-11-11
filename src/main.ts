@@ -221,7 +221,7 @@ function SwapTokens(cache: Cache) {
   UpdateStatus();
 }
 
-function CanCollect(cache: Cache) {
+function CanCollect(cache: Cache): boolean {
   const cacheCenter = LatLngToCell(cache.getBounds().getCenter());
 
   const playerPos = LatLngToCell(playerMarker.getLatLng());
@@ -250,7 +250,7 @@ function CellToLatLng(cell: Cell): leaflet.LatLng {
   return leaflet.latLng(cell.i * TILE_DEGREES, cell.j * TILE_DEGREES);
 }
 
-function GetNearestCellCenter(latlng: leaflet.LatLng) {
+function GetNearestCellCenter(latlng: leaflet.LatLng): leaflet.LatLng {
   const centerOffset = TILE_DEGREES / 2;
   let latShift = latlng.lat % TILE_DEGREES;
   let lngShift = latlng.lng % TILE_DEGREES;
