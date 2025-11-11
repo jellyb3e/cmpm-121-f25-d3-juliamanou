@@ -45,7 +45,6 @@ const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
   -122.05703507501151,
 );
-const ORIGIN = leaflet.latLng(0,0);
 
 // Tunable gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
@@ -57,7 +56,7 @@ const MAX_TOKEN_SIZE = 2;
 
 // Create the map (element with id "map" is defined in index.html)
 const map = leaflet.map(mapDiv, {
-  center: ORIGIN,
+  center: CLASSROOM_LATLNG,
   zoom: GAMEPLAY_ZOOM_LEVEL,
   minZoom: GAMEPLAY_ZOOM_LEVEL,
   maxZoom: GAMEPLAY_ZOOM_LEVEL,
@@ -75,7 +74,7 @@ leaflet
   .addTo(map);
 
 // Add a marker to represent the player
-const playerMarker = leaflet.marker(ORIGIN);
+const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
 playerMarker.bindTooltip("That's you!");
 playerMarker.addTo(map);
 
@@ -101,24 +100,24 @@ function DrawCache(lat: number, lng: number) {
 }
 
 function DrawVisibleMap() {
-  const centerOffset = TILE_DEGREES / 2; // used to get center of a cache !
   const bounds = map.getBounds(); // bounds of visible map
 
   const sw = bounds.getSouthWest(); // bottom left corner of visible map
   const ne = bounds.getNorthEast(); // upper right corner of visible map
 
-  // TODO: SHIFT starts and ends so they align 0,0 centrally
+  const startCenter = GetNearestCellCenter(sw);
+  const endCenter = GetNearestCellCenter(ne);
 
-  const latShift = sw.lat % TILE_DEGREES;
-  const lngShift = sw.lng % TILE_DEGREES;
-
-  const startLat = sw.lat - latShift;
-  const startLng = sw.lng - lngShift;
-  const endLat = ne.lat;
-  const endLng = ne.lng;
-
-  for (let lat = startLat; lat < endLat; lat += TILE_DEGREES) {
-    for (let lng = startLng; lng < endLng; lng += TILE_DEGREES) {
+  for (
+    let lat = startCenter.lat;
+    lat <= endCenter.lat + TILE_DEGREES;
+    lat += TILE_DEGREES
+  ) {
+    for (
+      let lng = startCenter.lng;
+      lng <= endCenter.lng + TILE_DEGREES;
+      lng += TILE_DEGREES
+    ) {
       DrawCache(lat, lng);
     }
   }
@@ -151,9 +150,7 @@ function UpdateCacheLabel(cache: Cache) {
 }
 
 function SetLabel(cache: Cache) {
-  const center = cache.getCenter();
-  const labelText = `${ToCell(center.lat).toFixed(2)}, ${ToCell(center.lng).toFixed(2)}`;
-  //const labelText = cache.pointValue == 0 ? "" : `${cache.pointValue}`;
+  const labelText = cache.pointValue == 0 ? "" : `${cache.pointValue}`;
   const label = leaflet.divIcon({
     className: "cache-label",
     html: labelText,
@@ -210,24 +207,35 @@ function CheckWin() {
   }
 }
 
-// Cell conversion functions
-function CellToLatLng(cell: Cell) {
-  const lat = cell.i * TILE_DEGREES;
-  const lng = cell.j * TILE_DEGREES;
-  return { lat, lng };
+/*
+function LatLngToCell(latlng: leaflet.LatLng): Cell {
+  return {
+    i: Math.floor(latlng.lat / TILE_DEGREES),
+    j: Math.floor(latlng.lng / TILE_DEGREES),
+  };
 }
 
-function ToCell(coord: number) {
-  return (coord / TILE_DEGREES);
+function CellToLatLng(cell: Cell): leaflet.LatLng {
+  return leaflet.latLng(cell.i * TILE_DEGREES, cell.j * TILE_DEGREES);
+}
+*/
+
+function GetNearestCellCenter(latlng: leaflet.LatLng) {
+  let latShift = latlng.lat % TILE_DEGREES;
+  let lngShift = latlng.lng % TILE_DEGREES;
+
+  if (latShift < 0) latShift += TILE_DEGREES;
+  if (lngShift < 0) lngShift += TILE_DEGREES;
+
+  return leaflet.latLng(
+    latlng.lat - latShift + TILE_DEGREES / 2,
+    latlng.lng - lngShift + TILE_DEGREES / 2,
+  );
 }
 
-function LatLngToCell(latlng: { lat: number; lng: number }) {
-  const i = latlng.lat / TILE_DEGREES;
-  const j = latlng.lng / TILE_DEGREES;
-  return { i: i, j: j };
+function CenterMarker() {
+  playerMarker.setLatLng(GetNearestCellCenter(playerMarker.getLatLng()));
 }
-
-CellToLatLng({ i: 1, j: 1 });
-LatLngToCell({ lat: 1, lng: 1 });
 
 DrawVisibleMap();
+CenterMarker();
