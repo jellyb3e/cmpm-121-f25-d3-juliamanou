@@ -146,7 +146,9 @@ function SpawnCache(cache: Cache) {
 
   if (IsRegistered(cellCenter)) {
     cache.pointValue = cacheMap.get(cache);
-  } else if (luck([cellCenter.i, cellCenter.j].toString()) < CACHE_SPAWN_PROBABILITY) {
+  } else if (
+    luck([cellCenter.i, cellCenter.j].toString()) < CACHE_SPAWN_PROBABILITY
+  ) {
     cache.pointValue = Math.floor(
       luck([cellCenter.i, cellCenter.j, "initialValue"].toString()) *
         (MAX_TOKEN_SIZE + 1),
