@@ -138,14 +138,20 @@ function DrawVisibleMap() {
 }
 
 function IsRegistered(cell: Cell) {
-  return cacheMap.has(cell);
+  return cacheMap.has(GetKeyString(cell));
+}
+
+function RegisterChange(cache: Cache) {
+  const cellCenter = LatLngToCell(cache.getBounds().getCenter());
+  cacheMap.set(GetKeyString(cellCenter), cache.pointValue);
 }
 
 function SpawnCache(cache: Cache) {
   const cellCenter = LatLngToCell(cache.getBounds().getCenter());
 
   if (IsRegistered(cellCenter)) {
-    cache.pointValue = cacheMap.get(cache);
+    console.log("ur registered bud");
+    cache.pointValue = cacheMap.get(GetKeyString(cellCenter));
   } else if (
     luck([cellCenter.i, cellCenter.j].toString()) < CACHE_SPAWN_PROBABILITY
   ) {
@@ -170,6 +176,7 @@ function CreateCacheLabel(cache: Cache) {
 
 function UpdateCacheLabel(cache: Cache) {
   cache.label.setIcon(SetLabel(cache));
+  RegisterChange(cache);
 }
 
 function SetLabel(cache: Cache) {
@@ -184,9 +191,9 @@ function SetLabel(cache: Cache) {
 
 function AddClickEvent(cache: Cache) {
   cache.on("click", function () {
-    if (!CanCollect(cache)) return;
+    if (!CanCollect(cache) || (cache.pointValue == 0 && currentToken == 0)) return;
 
-    if (cache.pointValue != 0 && cache.pointValue == currentToken) {
+    if (cache.pointValue == currentToken) {
       CombineTokens(cache);
       CheckWin();
     } else {
@@ -301,6 +308,10 @@ function CreateAndAddDiv(id: string) {
   const div = document.createElement("div");
   div.id = id;
   document.body.append(div);
+}
+
+function GetKeyString(cell: Cell) {
+  return `${cell.i},${cell.j}`
 }
 
 UpdateStatus();

@@ -58,5 +58,6 @@ Key gameplay challenge: Can players craft an even higher value token by moving t
 
 - [x] implement a map that stores modified cells and their point values
 - [x] remove all instances of latlng usage unless they are for display
+- [x] carry out cell storage on swap or combine
 - [ ] update map referencing so it doesn't store modified cells that have been changed back to original state
 - [ ] investigate implementing the flyweight pattern
