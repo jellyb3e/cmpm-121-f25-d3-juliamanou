@@ -143,24 +143,20 @@ function IsRegistered(cell: Cell) {
 
 function RegisterChange(cache: Cache) {
   const cellCenter = LatLngToCell(cache.getBounds().getCenter());
-  cacheMap.set(GetKeyString(cellCenter), cache.pointValue);
+  if (cache.pointValue == GetInitialCacheValue(cellCenter)) {
+    cacheMap.delete(GetKeyString(cellCenter));
+  } else {
+    cacheMap.set(GetKeyString(cellCenter), cache.pointValue);
+  }
 }
 
 function SpawnCache(cache: Cache) {
   const cellCenter = LatLngToCell(cache.getBounds().getCenter());
 
   if (IsRegistered(cellCenter)) {
-    console.log("ur registered bud");
     cache.pointValue = cacheMap.get(GetKeyString(cellCenter));
-  } else if (
-    luck([cellCenter.i, cellCenter.j].toString()) < CACHE_SPAWN_PROBABILITY
-  ) {
-    cache.pointValue = Math.floor(
-      luck([cellCenter.i, cellCenter.j, "initialValue"].toString()) *
-        (MAX_TOKEN_SIZE + 1),
-    );
   } else {
-    cache.pointValue = 0;
+    cache.pointValue = GetInitialCacheValue(cellCenter);
   }
   CreateCacheLabel(cache);
   AddClickEvent(cache);
@@ -191,7 +187,9 @@ function SetLabel(cache: Cache) {
 
 function AddClickEvent(cache: Cache) {
   cache.on("click", function () {
-    if (!CanCollect(cache) || (cache.pointValue == 0 && currentToken == 0)) return;
+    if (!CanCollect(cache) || (cache.pointValue == 0 && currentToken == 0)) {
+      return;
+    }
 
     if (cache.pointValue == currentToken) {
       CombineTokens(cache);
@@ -311,7 +309,20 @@ function CreateAndAddDiv(id: string) {
 }
 
 function GetKeyString(cell: Cell) {
-  return `${cell.i},${cell.j}`
+  return `${cell.i},${cell.j}`;
+}
+
+function GetInitialCacheValue(cell: Cell) {
+  if (
+    luck([cell.i, cell.j].toString()) < CACHE_SPAWN_PROBABILITY
+  ) {
+    return Math.floor(
+      luck([cell.i, cell.j, "initialValue"].toString()) *
+        (MAX_TOKEN_SIZE + 1),
+    );
+  } else {
+    return 0;
+  }
 }
 
 UpdateStatus();
