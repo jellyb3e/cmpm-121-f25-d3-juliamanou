@@ -104,11 +104,11 @@ function CreateMap(): leaflet.Map {
   return map;
 }
 
-function DrawCache(lat: number, lng: number) {
-  const centerOffset = TILE_DEGREES / 2;
+function DrawCache(cell: Cell) {
+  const latlng = leaflet.latLng(CellToLatLng(cell));
   const bounds = leaflet.latLngBounds([
-    [lat - centerOffset, lng - centerOffset],
-    [lat + centerOffset, lng + centerOffset],
+    [latlng.lat, latlng.lng],
+    [latlng.lat + TILE_DEGREES, latlng.lng + TILE_DEGREES],
   ]);
 
   // Add a rectangle to the map to represent the cache
@@ -122,25 +122,17 @@ function DrawCache(lat: number, lng: number) {
 }
 
 function DrawVisibleMap() {
-  const bounds = map.getBounds(); // bounds of visible map
+  const bounds = map.getBounds();
 
-  const sw = bounds.getSouthWest(); // bottom left corner of visible map
-  const ne = bounds.getNorthEast(); // upper right corner of visible map
+  const startCenterLatLng = GetNearestLatLngCenter(bounds.getSouthWest());
+  const endCenterLatLng = GetNearestLatLngCenter(bounds.getNorthEast());
 
-  const startCenter = GetNearestCellCenter(sw);
-  const endCenter = GetNearestCellCenter(ne);
+  const startCenter = LatLngToCell(startCenterLatLng);
+  const endCenter = LatLngToCell(endCenterLatLng);
 
-  for (
-    let lat = startCenter.lat;
-    lat <= endCenter.lat + TILE_DEGREES;
-    lat += TILE_DEGREES
-  ) {
-    for (
-      let lng = startCenter.lng;
-      lng <= endCenter.lng + TILE_DEGREES;
-      lng += TILE_DEGREES
-    ) {
-      DrawCache(lat, lng);
+  for (let i = startCenter.i; i <= endCenter.i + 1; i++) {
+    for (let j = startCenter.j; j <= endCenter.j + 1; j++) {
+      DrawCache({ i, j });
     }
   }
 }
@@ -150,14 +142,13 @@ function IsRegistered(cell: Cell) {
 }
 
 function SpawnCache(cache: Cache) {
-  const bounds = cache.getBounds();
-  const swCell = LatLngToCell(bounds.getSouthWest());
+  const cellCenter = LatLngToCell(cache.getBounds().getCenter());
 
-  if (IsRegistered(LatLngToCell(bounds.getCenter()))) {
+  if (IsRegistered(cellCenter)) {
     cache.pointValue = cacheMap.get(cache);
-  } else if (luck([swCell.i, swCell.j].toString()) < CACHE_SPAWN_PROBABILITY) {
+  } else if (luck([cellCenter.i, cellCenter.j].toString()) < CACHE_SPAWN_PROBABILITY) {
     cache.pointValue = Math.floor(
-      luck([swCell.i, swCell.j, "initialValue"].toString()) *
+      luck([cellCenter.i, cellCenter.j, "initialValue"].toString()) *
         (MAX_TOKEN_SIZE + 1),
     );
   } else {
@@ -259,7 +250,7 @@ function CellToLatLng(cell: Cell): leaflet.LatLng {
   return leaflet.latLng(cell.i * TILE_DEGREES, cell.j * TILE_DEGREES);
 }
 
-function GetNearestCellCenter(latlng: leaflet.LatLng): leaflet.LatLng {
+function GetNearestLatLngCenter(latlng: leaflet.LatLng): leaflet.LatLng {
   const centerOffset = TILE_DEGREES / 2;
   let latShift = latlng.lat % TILE_DEGREES;
   let lngShift = latlng.lng % TILE_DEGREES;
@@ -274,7 +265,7 @@ function GetNearestCellCenter(latlng: leaflet.LatLng): leaflet.LatLng {
 }
 
 function CenterMarker() {
-  playerMarker.setLatLng(GetNearestCellCenter(playerMarker.getLatLng()));
+  playerMarker.setLatLng(GetNearestLatLngCenter(playerMarker.getLatLng()));
 }
 
 function CreateArrowKeys() {
