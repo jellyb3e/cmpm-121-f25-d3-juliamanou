@@ -73,6 +73,9 @@ playerMarker.addTo(map);
 // Player's current token
 let currentToken = 0;
 
+// Create a Map object to hold modified caches
+const cacheMap = new Map();
+
 function CreateMap(): leaflet.Map {
   const mapDiv = document.getElementById("map")!;
   const map = leaflet.map(mapDiv, {
@@ -142,11 +145,17 @@ function DrawVisibleMap() {
   }
 }
 
+function IsRegistered(cell: Cell) {
+  return cacheMap.has(cell);
+}
+
 function SpawnCache(cache: Cache) {
   const bounds = cache.getBounds();
   const swCell = LatLngToCell(bounds.getSouthWest());
 
-  if (luck([swCell.i, swCell.j].toString()) < CACHE_SPAWN_PROBABILITY) {
+  if (IsRegistered(LatLngToCell(bounds.getCenter()))) {
+    cache.pointValue = cacheMap.get(cache);
+  } else if (luck([swCell.i, swCell.j].toString()) < CACHE_SPAWN_PROBABILITY) {
     cache.pointValue = Math.floor(
       luck([swCell.i, swCell.j, "initialValue"].toString()) *
         (MAX_TOKEN_SIZE + 1),
