@@ -172,7 +172,6 @@ function CreateCacheLabel(cache: Cache) {
 
 function UpdateCacheLabel(cache: Cache) {
   cache.label.setIcon(SetLabel(cache));
-  RegisterChange(cache);
 }
 
 function SetLabel(cache: Cache) {
@@ -197,6 +196,7 @@ function AddClickEvent(cache: Cache) {
     } else {
       SwapTokens(cache);
     }
+    RegisterChange(cache);
     UpdateCacheLabel(cache);
   });
 }
