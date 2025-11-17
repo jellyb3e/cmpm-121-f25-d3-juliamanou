@@ -63,8 +63,17 @@ const MAX_TOKEN_SIZE = 2;
 const map = CreateMap();
 let watching: boolean = false;
 
-//const url = new URL(globalThis.location.href);
-const searchParams = new URLSearchParams({ controls: "buttons" });
+const searchParams = new URLSearchParams(globalThis.location.search);
+if (!searchParams.has("controls")) {
+  searchParams.set("controls", "buttons");
+  history.replaceState(null, "", `?${searchParams.toString()}`);
+}
+
+globalThis.addEventListener("load", function () {
+  const scheme = searchParams.get("controls")!;
+  if (scheme != "buttons" && scheme != "geo") return;
+  SetControlScheme(scheme);
+});
 
 // Create cache layer group to easily clear for redrawing
 const cacheLayerGroup = leaflet.layerGroup().addTo(map);
@@ -342,6 +351,7 @@ function SetInitialPosition() {
       playerMarker.addTo(map);
       map.panTo(latlng);
       SetControlScheme("geo");
+      StartWatch();
     },
     () => {
       playerMarker.setLatLng(CLASSROOM_LATLNG);
@@ -390,4 +400,3 @@ function SetControlScheme(scheme: "buttons" | "geo") {
 UpdateStatus();
 DrawVisibleMap();
 SetInitialPosition();
-StartWatch();

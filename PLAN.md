@@ -76,6 +76,7 @@ Key gameplay challenge: Can the user test the game with multiple gameplay sessio
 - [x] use api to continually update player location
 - [x] after updating player location, move the player marker to the nearest tile (buttons only)
 - [x] add control switching between buttons and geolocation through page's query string
+- [x] add event listener for query string changes
 - [ ] add a restart button (clears currentToken, hide win text, clears cache map)
 - [ ] add localstorage api to save gamestate information between page loads
 - [ ] add a recenter button so user can scroll while moving
