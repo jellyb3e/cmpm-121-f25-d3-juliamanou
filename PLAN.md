@@ -54,6 +54,9 @@ Key gameplay challenge: Can players craft an even higher value token by moving t
 
 ### D3.c: Object persistence
 
+Key technical challenge: Can your software accurately remember the state of map cells even when they scroll off the screen?
+Key gameplay challenge: Can you fix a gameplay bug where players can farm tokens by moving into and out of a region repeatedly to get access to fresh resources?
+
 #### D3.c Steps
 
 - [x] implement a map that stores modified cells and their point values
@@ -61,3 +64,17 @@ Key gameplay challenge: Can players craft an even higher value token by moving t
 - [x] carry out cell storage on swap or combine
 - [x] update map referencing so it doesn't store modified cells that have been changed back to original state
 - [x] investigate implementing the flyweight pattern
+
+### D3.d: Gameplay Across Real-world Space and Time
+
+Key technical challenges: Can your software remember game state even when the page is closed? Is the player character’s in-game movement controlled by the real-world geolocation of their device?
+Key gameplay challenge: Can the user test the game with multiple gameplay sessions, some involving real-world movement and some involving simulated movement?
+
+#### D3.d Steps
+
+- [ ] add browser geolocation api
+- [ ] use api to continually update player location
+- [ ] after updating player location, move the player marker to the nearest tile
+- [ ] add control switching between buttons and geolocation through page's query string
+- [ ] add a restart button (clears currentToken, hide win text, clears cache map)
+- [ ] add localstorage api to save gamestate information between page loads
