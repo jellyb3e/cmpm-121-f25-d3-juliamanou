@@ -39,11 +39,24 @@ const directions: Arrow[] = [
 
 // Create basic UI elements
 
-CreateAndAddDiv("controlPanel");
-CreateArrowKeys();
 CreateAndAddDiv("map");
 CreateAndAddDiv("statusPanel");
 CreateAndAddDiv("winStatus");
+CreateAndAddDiv("controlPanel");
+CreateArrowKeys();
+
+CreateChildButton(CreateAndAddDiv("restartPanel"), "begin again")
+  .addEventListener("click", () => {
+    cacheMap.clear();
+    DrawVisibleMap();
+    currentToken = 0;
+    UpdateStatus();
+  });
+
+CreateChildButton(CreateAndAddDiv("recenterPanel"), "recender")
+  .addEventListener("click", () => {
+    console.log("recenderint");
+  });
 
 // Our classroom location
 const CLASSROOM_LATLNG = leaflet.latLng(
@@ -288,20 +301,25 @@ function CenterMarker() {
   playerMarker.setLatLng(GetNearestLatLngCenter(playerMarker.getLatLng()));
 }
 */
+
+function CreateChildButton(parent: HTMLElement, content: string) {
+  const button = document.createElement("button");
+  button.textContent = content;
+  parent.appendChild(button);
+  return button;
+}
+
 function CreateArrowKeys() {
   const arrowKeysDiv = document.createElement("div");
   const controlPanelDiv = document.getElementById("controlPanel")!;
   controlPanelDiv.appendChild(arrowKeysDiv);
 
   for (const dir of directions) {
-    const button = document.createElement("button");
-    button.textContent = dir.symbol;
-
+    const button = CreateChildButton(arrowKeysDiv, dir.symbol);
+    button.className = "directionButton";
     button.addEventListener("click", () => {
       MovePlayer(dir.delta);
     });
-
-    arrowKeysDiv.appendChild(button);
   }
 }
 
@@ -320,6 +338,7 @@ function CreateAndAddDiv(id: string) {
   const div = document.createElement("div");
   div.id = id;
   document.body.append(div);
+  return div;
 }
 
 function GetKeyString(cell: Cell) {
@@ -350,7 +369,6 @@ function SetInitialPosition() {
       playerMarker.bindTooltip("That's you!");
       playerMarker.addTo(map);
       map.panTo(latlng);
-      SetControlScheme("geo");
       StartWatch();
     },
     () => {
@@ -372,10 +390,8 @@ function StartWatch() {
           position.coords.longitude,
         );
         playerMarker.setLatLng(latlng);
-        map.panTo(latlng);
         watching = true;
       });
-      SetControlScheme("geo");
     } else if (result.state === "denied") {
       if (watchID != null) {
         navigator.geolocation.clearWatch(watchID);
@@ -388,7 +404,9 @@ function StartWatch() {
 
 function SetButtonVisibility(visible: boolean) {
   const controlPanel = document.getElementById("controlPanel")!;
+  const recenterPanel = document.getElementById("recenterPanel")!;
   controlPanel.style.display = visible ? "block" : "none";
+  recenterPanel.style.display = visible ? "none" : "block";
 }
 
 function SetControlScheme(scheme: "buttons" | "geo") {
