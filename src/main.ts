@@ -61,14 +61,14 @@ const MAX_TOKEN_SIZE = 2;
 
 // Create the map (element with id "map" is defined in index.html)
 const map = CreateMap();
+let watching: boolean = false;
 
 // Create cache layer group to easily clear for redrawing
 const cacheLayerGroup = leaflet.layerGroup().addTo(map);
 
 // Add a marker to represent the player
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
-playerMarker.bindTooltip("That's you!");
-playerMarker.addTo(map);
+let watchID: number;
 
 // Player's current token
 let currentToken = 0;
@@ -105,7 +105,7 @@ function CreateMap(): leaflet.Map {
 }
 
 function DrawCache(cell: Cell) {
-  const latlng = leaflet.latLng(CellToLatLng(cell));
+  const latlng = CellToLatLng(cell);
   const bounds = leaflet.latLngBounds([
     [latlng.lat, latlng.lng],
     [latlng.lat + TILE_DEGREES, latlng.lng + TILE_DEGREES],
@@ -271,10 +271,11 @@ function GetNearestLatLngCenter(latlng: leaflet.LatLng): leaflet.LatLng {
   );
 }
 
+/*
 function CenterMarker() {
   playerMarker.setLatLng(GetNearestLatLngCenter(playerMarker.getLatLng()));
 }
-
+*/
 function CreateArrowKeys() {
   const arrowKeysDiv = document.createElement("div");
   const controlPanelDiv = document.getElementById("controlPanel")!;
@@ -325,6 +326,47 @@ function GetInitialCacheValue(cell: Cell) {
   }
 }
 
+function SetInitialPosition() {
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const latlng = leaflet.latLng(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+      playerMarker.setLatLng(latlng);
+      playerMarker.bindTooltip("That's you!");
+      playerMarker.addTo(map);
+      map.panTo(latlng);
+      StartWatch();
+    },
+    () => {
+      playerMarker.setLatLng(CLASSROOM_LATLNG);
+      playerMarker.bindTooltip("That's you!");
+      playerMarker.addTo(map);
+      map.panTo(CLASSROOM_LATLNG);
+    },
+  );
+}
+
+function StartWatch() {
+  navigator.permissions.query({ name: "geolocation" }).then((result) => {
+    if (result.state === "granted" && !watching) { // check query string too
+      watchID = navigator.geolocation.watchPosition((position) => {
+        const latlng = leaflet.latLng(
+          position.coords.latitude,
+          position.coords.longitude,
+        );
+        playerMarker.setLatLng(latlng);
+        map.panTo(latlng);
+        watching = true;
+      });
+    } else if (result.state === "denied" && watchID != null) { // set query string to buttons
+      navigator.geolocation.clearWatch(watchID);
+    }
+  });
+}
+
 UpdateStatus();
 DrawVisibleMap();
-CenterMarker();
+SetInitialPosition();
+//StartWatch();

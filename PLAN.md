@@ -72,8 +72,8 @@ Key gameplay challenge: Can the user test the game with multiple gameplay sessio
 
 #### D3.d Steps
 
-- [ ] add browser geolocation api
-- [ ] use api to continually update player location
+- [x] add browser geolocation api
+- [x] use api to continually update player location
 - [ ] after updating player location, move the player marker to the nearest tile
 - [ ] add control switching between buttons and geolocation through page's query string
 - [ ] add a restart button (clears currentToken, hide win text, clears cache map)
