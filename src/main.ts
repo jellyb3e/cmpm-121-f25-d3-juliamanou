@@ -63,12 +63,15 @@ const MAX_TOKEN_SIZE = 2;
 const map = CreateMap();
 let watching: boolean = false;
 
+//const url = new URL(globalThis.location.href);
+const searchParams = new URLSearchParams({ controls: "buttons" });
+
 // Create cache layer group to easily clear for redrawing
 const cacheLayerGroup = leaflet.layerGroup().addTo(map);
 
 // Add a marker to represent the player
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
-let watchID: number;
+let watchID: number | null = null;
 
 // Player's current token
 let currentToken = 0;
@@ -297,9 +300,10 @@ function MovePlayer(delta: Cell) {
   const lat = playerMarker.getLatLng().lat;
   const lng = playerMarker.getLatLng().lng;
   const deltaLatLng = CellToLatLng(delta);
-  playerMarker.setLatLng(
+  const newLatLng = GetNearestLatLngCenter(
     leaflet.latLng(lat + deltaLatLng.lat, lng + deltaLatLng.lng),
   );
+  playerMarker.setLatLng(newLatLng);
   map.panTo(playerMarker.getLatLng());
 }
 
@@ -337,20 +341,21 @@ function SetInitialPosition() {
       playerMarker.bindTooltip("That's you!");
       playerMarker.addTo(map);
       map.panTo(latlng);
-      StartWatch();
+      SetControlScheme("geo");
     },
     () => {
       playerMarker.setLatLng(CLASSROOM_LATLNG);
       playerMarker.bindTooltip("That's you!");
       playerMarker.addTo(map);
       map.panTo(CLASSROOM_LATLNG);
+      SetControlScheme("buttons");
     },
   );
 }
 
 function StartWatch() {
   navigator.permissions.query({ name: "geolocation" }).then((result) => {
-    if (result.state === "granted" && !watching) { // check query string too
+    if (result.state === "granted" && !watching) {
       watchID = navigator.geolocation.watchPosition((position) => {
         const latlng = leaflet.latLng(
           position.coords.latitude,
@@ -360,13 +365,29 @@ function StartWatch() {
         map.panTo(latlng);
         watching = true;
       });
-    } else if (result.state === "denied" && watchID != null) { // set query string to buttons
-      navigator.geolocation.clearWatch(watchID);
+      SetControlScheme("geo");
+    } else if (result.state === "denied") {
+      if (watchID != null) {
+        navigator.geolocation.clearWatch(watchID);
+        watchID = null;
+      }
+      SetControlScheme("buttons");
     }
   });
+}
+
+function SetButtonVisibility(visible: boolean) {
+  const controlPanel = document.getElementById("controlPanel")!;
+  controlPanel.style.display = visible ? "block" : "none";
+}
+
+function SetControlScheme(scheme: "buttons" | "geo") {
+  searchParams.set("controls", scheme);
+  history.replaceState(null, "", `?${searchParams.toString()}`);
+  SetButtonVisibility(scheme === "buttons");
 }
 
 UpdateStatus();
 DrawVisibleMap();
 SetInitialPosition();
-//StartWatch();
+StartWatch();
