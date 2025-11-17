@@ -53,9 +53,9 @@ CreateChildButton(CreateAndAddDiv("restartPanel"), "begin again")
     UpdateStatus();
   });
 
-CreateChildButton(CreateAndAddDiv("recenterPanel"), "recender")
+CreateChildButton(CreateAndAddDiv("recenterPanel"), "recenter")
   .addEventListener("click", () => {
-    console.log("recenderint");
+    SetFollow(true);
   });
 
 // Our classroom location
@@ -94,6 +94,7 @@ const cacheLayerGroup = leaflet.layerGroup().addTo(map);
 // Add a marker to represent the player
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
 let watchID: number | null = null;
+let following: boolean = true;
 
 // Player's current token
 let currentToken = 0;
@@ -125,8 +126,21 @@ function CreateMap(): leaflet.Map {
     cacheLayerGroup.clearLayers();
     DrawVisibleMap();
   });
+  map.on("dragstart", () => {
+    SetFollow(false);
+  });
 
   return map;
+}
+
+function SetFollow(follow: boolean) {
+  if (!watching) return;
+  const followButton = document.getElementById(
+    "recenter",
+  )! as HTMLButtonElement;
+  followButton.disabled = follow;
+  following = follow;
+  if (follow) map.panTo(playerMarker.getLatLng());
 }
 
 function DrawCache(cell: Cell) {
@@ -296,15 +310,14 @@ function GetNearestLatLngCenter(latlng: leaflet.LatLng): leaflet.LatLng {
   );
 }
 
-/*
 function CenterMarker() {
   playerMarker.setLatLng(GetNearestLatLngCenter(playerMarker.getLatLng()));
 }
-*/
 
 function CreateChildButton(parent: HTMLElement, content: string) {
   const button = document.createElement("button");
   button.textContent = content;
+  button.id = content;
   parent.appendChild(button);
   return button;
 }
@@ -391,6 +404,7 @@ function StartWatch() {
         );
         playerMarker.setLatLng(latlng);
         watching = true;
+        if (following) map.panTo(latlng);
       });
     } else if (result.state === "denied") {
       if (watchID != null) {
@@ -413,6 +427,8 @@ function SetControlScheme(scheme: "buttons" | "geo") {
   searchParams.set("controls", scheme);
   history.replaceState(null, "", `?${searchParams.toString()}`);
   SetButtonVisibility(scheme === "buttons");
+  if (scheme === "buttons") CenterMarker();
+  else SetFollow(true);
 }
 
 UpdateStatus();
