@@ -1,29 +1,24 @@
+/* imports */
 // @deno-types="npm:@types/leaflet"
 import leaflet from "leaflet";
-
-// Style sheets
-import "leaflet/dist/leaflet.css"; // supporting style for Leaflet
-import "./style.css"; // student-controlled page style
-
-// Fix missing marker images
-import "./_leafletWorkaround.ts"; // fixes for missing Leaflet images
-
-// Import our luck function
+import "leaflet/dist/leaflet.css";
+import "./style.css";
+import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
 
-// Create Cache interface
+/* interfaces && consts */
+
 interface Cache extends leaflet.Rectangle {
   pointValue: number;
   label: leaflet.Marker;
 }
 
-// Create Cell interface
+// FLYWEIGHT
 interface Cell {
   i: number;
   j: number;
 }
 
-// Create Arrow interface for buttons
 interface Arrow {
   direction: string;
   symbol: string;
@@ -37,21 +32,17 @@ const directions: Arrow[] = [
   { direction: "right", symbol: "→", delta: { i: 0, j: 1 } },
 ];
 
-// Our classroom location
 const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
   -122.05703507501151,
 );
 
-// Tunable gameplay parameters
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
 const COLLECT_DISTANCE = 2;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 const GOAL_TOKEN = 4;
 const MAX_TOKEN_SIZE = 2;
-
-// Create basic UI elements
 
 CreateAndAddDiv("map");
 CreateAndAddDiv("statusPanel");
@@ -76,9 +67,13 @@ CreateChildButton(CreateAndAddDiv("recenterPanel"), "recenter")
     SetFollow(true);
   });
 
-// Create the map (element with id "map" is defined in index.html)
 const map = CreateMap();
 let watching: boolean = false;
+let watchID: number | null = null;
+let following: boolean = true;
+let currentToken = 0;
+const cacheMap = new Map(); //MEMENTO
+const cacheLayerGroup = leaflet.layerGroup().addTo(map);
 
 const searchParams = new URLSearchParams(globalThis.location.search);
 if (!searchParams.has("controls")) {
@@ -92,19 +87,7 @@ globalThis.addEventListener("load", function () {
   SetControlScheme(scheme);
 });
 
-// Create cache layer group to easily clear for redrawing
-const cacheLayerGroup = leaflet.layerGroup().addTo(map);
-
-// Add a marker to represent the player
-const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
-let watchID: number | null = null;
-let following: boolean = true;
-
-// Player's current token
-let currentToken = 0;
-
-// Create a Map object to hold modified caches
-const cacheMap = new Map();
+/* map creation */
 
 function CreateMap(): leaflet.Map {
   const mapDiv = document.getElementById("map")!;
@@ -117,7 +100,6 @@ function CreateMap(): leaflet.Map {
     scrollWheelZoom: false,
   });
 
-  // Populate the map with a background tile layer
   leaflet
     .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -130,12 +112,17 @@ function CreateMap(): leaflet.Map {
     cacheLayerGroup.clearLayers();
     DrawVisibleMap();
   });
+
   map.on("dragstart", () => {
     SetFollow(false);
   });
 
   return map;
 }
+
+/* player marker */
+
+const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
 
 function SetFollow(follow: boolean) {
   if (!watching) return;
@@ -147,6 +134,19 @@ function SetFollow(follow: boolean) {
   if (follow) map.panTo(playerMarker.getLatLng());
 }
 
+function MovePlayer(delta: Cell) {
+  const lat = playerMarker.getLatLng().lat;
+  const lng = playerMarker.getLatLng().lng;
+  const deltaLatLng = CellToLatLng(delta);
+  const newLatLng = GetNearestLatLngCenter(
+    leaflet.latLng(lat + deltaLatLng.lat, lng + deltaLatLng.lng),
+  );
+  playerMarker.setLatLng(newLatLng);
+  map.panTo(playerMarker.getLatLng());
+}
+
+/* cache */
+
 function DrawCache(cell: Cell) {
   const latlng = CellToLatLng(cell);
   const bounds = leaflet.latLngBounds([
@@ -154,22 +154,20 @@ function DrawCache(cell: Cell) {
     [latlng.lat + TILE_DEGREES, latlng.lng + TILE_DEGREES],
   ]);
 
-  // Add a rectangle to the map to represent the cache
   const cache = leaflet.rectangle(bounds, {
     color: "gray",
     fillOpacity: 0,
     weight: 1,
   }) as Cache;
+
   cacheLayerGroup.addLayer(cache);
   SpawnCache(cache);
 }
 
 function DrawVisibleMap() {
   const bounds = map.getBounds();
-
   const startCenterLatLng = GetNearestLatLngCenter(bounds.getSouthWest());
   const endCenterLatLng = GetNearestLatLngCenter(bounds.getNorthEast());
-
   const startCenter = LatLngToCell(startCenterLatLng);
   const endCenter = LatLngToCell(endCenterLatLng);
 
@@ -195,7 +193,6 @@ function RegisterChange(cache: Cache) {
 
 function SpawnCache(cache: Cache) {
   const cellCenter = LatLngToCell(cache.getBounds().getCenter());
-
   if (IsRegistered(cellCenter)) {
     cache.pointValue = cacheMap.get(GetKeyString(cellCenter));
   } else {
@@ -219,12 +216,11 @@ function UpdateCacheLabel(cache: Cache) {
 
 function SetLabel(cache: Cache) {
   const labelText = cache.pointValue == 0 ? "" : `${cache.pointValue}`;
-  const label = leaflet.divIcon({
+  return leaflet.divIcon({
     className: "cache-label",
     html: labelText,
     iconSize: [30, 30],
   });
-  return label;
 }
 
 function AddClickEvent(cache: Cache) {
@@ -232,7 +228,6 @@ function AddClickEvent(cache: Cache) {
     if (!CanCollect(cache) || (cache.pointValue == 0 && currentToken == 0)) {
       return;
     }
-
     if (cache.pointValue == currentToken) {
       CombineTokens(cache);
       CheckWin();
@@ -244,18 +239,15 @@ function AddClickEvent(cache: Cache) {
   });
 }
 
-function UpdateStatus(action: "" | "combine" = "") {
-  const statusPanelDiv = document.getElementById("statusPanel")!;
+/* gameplay functions */
 
-  if (action === "combine") {
-    statusPanelDiv.innerHTML = `two ${currentToken} tokens combined to create ${
-      currentToken * 2
-    } token`;
-  } else {
-    statusPanelDiv.innerHTML = (currentToken === 0)
-      ? "no token in hand"
-      : `${currentToken} token in hand`;
-  }
+function CanCollect(cache: Cache): boolean {
+  const cacheCenter = LatLngToCell(cache.getBounds().getCenter());
+  const playerPos = LatLngToCell(playerMarker.getLatLng());
+  return (
+    Math.abs(playerPos.i - cacheCenter.i) <= COLLECT_DISTANCE &&
+    Math.abs(playerPos.j - cacheCenter.j) <= COLLECT_DISTANCE
+  );
 }
 
 function CombineTokens(cache: Cache) {
@@ -271,23 +263,27 @@ function SwapTokens(cache: Cache) {
   UpdateStatus();
 }
 
-function CanCollect(cache: Cache): boolean {
-  const cacheCenter = LatLngToCell(cache.getBounds().getCenter());
-
-  const playerPos = LatLngToCell(playerMarker.getLatLng());
-  const iDist = Math.abs(playerPos.i - cacheCenter.i);
-  const jDist = Math.abs(playerPos.j - cacheCenter.j);
-
-  return iDist <= COLLECT_DISTANCE && jDist <= COLLECT_DISTANCE;
-}
-
 function CheckWin() {
   const winStatusDiv = document.getElementById("winStatus")!;
-
   if (currentToken == GOAL_TOKEN) {
     winStatusDiv.style.display = "block";
   }
 }
+
+function UpdateStatus(action: "" | "combine" = "") {
+  const statusPanelDiv = document.getElementById("statusPanel")!;
+  if (action === "combine") {
+    statusPanelDiv.innerHTML = `two ${currentToken} tokens combined to create ${
+      currentToken * 2
+    } token`;
+  } else {
+    statusPanelDiv.innerHTML = currentToken === 0
+      ? "no token in hand"
+      : `${currentToken} token in hand`;
+  }
+}
+
+/* coordinate helpers */
 
 function LatLngToCell(latlng: leaflet.LatLng): Cell {
   return {
@@ -304,7 +300,6 @@ function GetNearestLatLngCenter(latlng: leaflet.LatLng): leaflet.LatLng {
   const centerOffset = TILE_DEGREES / 2;
   let latShift = latlng.lat % TILE_DEGREES;
   let lngShift = latlng.lng % TILE_DEGREES;
-
   if (latShift < 0) latShift += TILE_DEGREES;
   if (lngShift < 0) lngShift += TILE_DEGREES;
 
@@ -317,6 +312,8 @@ function GetNearestLatLngCenter(latlng: leaflet.LatLng): leaflet.LatLng {
 function CenterMarker() {
   playerMarker.setLatLng(GetNearestLatLngCenter(playerMarker.getLatLng()));
 }
+
+/* ui */
 
 function CreateChildButton(parent: HTMLElement, content: string) {
   const button = document.createElement("button");
@@ -340,17 +337,6 @@ function CreateArrowKeys() {
   }
 }
 
-function MovePlayer(delta: Cell) {
-  const lat = playerMarker.getLatLng().lat;
-  const lng = playerMarker.getLatLng().lng;
-  const deltaLatLng = CellToLatLng(delta);
-  const newLatLng = GetNearestLatLngCenter(
-    leaflet.latLng(lat + deltaLatLng.lat, lng + deltaLatLng.lng),
-  );
-  playerMarker.setLatLng(newLatLng);
-  map.panTo(playerMarker.getLatLng());
-}
-
 function CreateAndAddDiv(id: string) {
   const div = document.createElement("div");
   div.id = id;
@@ -358,22 +344,23 @@ function CreateAndAddDiv(id: string) {
   return div;
 }
 
+/* cacheMap interaction helpers */
+
 function GetKeyString(cell: Cell) {
   return `${cell.i},${cell.j}`;
 }
 
 function GetInitialCacheValue(cell: Cell) {
-  if (
-    luck([cell.i, cell.j].toString()) < CACHE_SPAWN_PROBABILITY
-  ) {
+  if (luck([cell.i, cell.j].toString()) < CACHE_SPAWN_PROBABILITY) {
     return Math.floor(
-      luck([cell.i, cell.j, "initialValue"].toString()) *
-        (MAX_TOKEN_SIZE + 1),
+      luck([cell.i, cell.j, "initialValue"].toString()) * (MAX_TOKEN_SIZE + 1),
     );
   } else {
     return 0;
   }
 }
+
+/* geolocation functions */
 
 function StartWatch() {
   navigator.permissions.query({ name: "geolocation" }).then((result) => {
@@ -404,16 +391,6 @@ function SetButtonVisibility(visible: boolean) {
   recenterPanel.style.display = visible ? "none" : "block";
 }
 
-function SaveGameState() {
-  const state = {
-    playerLatLng: playerMarker.getLatLng(),
-    currentToken,
-    following,
-    cacheMap: Array.from(cacheMap.entries()), // converts Map to array
-  };
-  localStorage.setItem("gameState", JSON.stringify(state));
-}
-
 function SetControlScheme(scheme: "buttons" | "geo") {
   searchParams.set("controls", scheme);
   history.replaceState(null, "", `?${searchParams.toString()}`);
@@ -430,6 +407,48 @@ function SetControlScheme(scheme: "buttons" | "geo") {
     following = true;
     StartWatch();
   }
+}
+
+/* local storage  */
+
+function SaveGameState() {
+  const state = {
+    playerLatLng: playerMarker.getLatLng(),
+    currentToken,
+    following,
+    cacheMap: Array.from(cacheMap.entries()),
+  };
+  localStorage.setItem("gameState", JSON.stringify(state));
+}
+
+function LoadGameState() {
+  const saved = localStorage.getItem("gameState");
+  if (!saved) return;
+
+  const state = JSON.parse(saved);
+
+  if (state.playerLatLng) {
+    const latlng = leaflet.latLng(
+      state.playerLatLng.lat,
+      state.playerLatLng.lng,
+    );
+    playerMarker.setLatLng(latlng);
+    playerMarker.addTo(map);
+    map.panTo(latlng);
+  }
+
+  if (state.currentToken !== undefined) currentToken = state.currentToken;
+  if (state.following !== undefined) following = state.following;
+
+  if (state.cacheMap) {
+    cacheMap.clear();
+    for (const [key, value] of state.cacheMap) {
+      cacheMap.set(key, value);
+    }
+  }
+
+  UpdateStatus();
+  DrawVisibleMap();
 }
 
 function SetInitialPosition() {
@@ -464,40 +483,11 @@ function SetInitialPosition() {
   );
 }
 
-function LoadGameState() {
-  const saved = localStorage.getItem("gameState");
-  if (!saved) return;
-
-  const state = JSON.parse(saved);
-
-  if (state.playerLatLng) {
-    const latlng = leaflet.latLng(
-      state.playerLatLng.lat,
-      state.playerLatLng.lng,
-    );
-    playerMarker.setLatLng(latlng);
-    // Add to map if not already
-    playerMarker.addTo(map);
-    map.panTo(latlng);
-  }
-
-  if (state.currentToken !== undefined) currentToken = state.currentToken;
-  if (state.following !== undefined) following = state.following;
-
-  if (state.cacheMap) {
-    cacheMap.clear();
-    for (const [key, value] of state.cacheMap) {
-      cacheMap.set(key, value);
-    }
-  }
-
-  UpdateStatus();
-  DrawVisibleMap();
-}
-
 self.addEventListener("beforeunload", () => {
   SaveGameState();
 });
+
+/* function calls */
 
 SetInitialPosition();
 UpdateStatus();
