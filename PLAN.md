@@ -78,5 +78,5 @@ Key gameplay challenge: Can the user test the game with multiple gameplay sessio
 - [x] add control switching between buttons and geolocation through page's query string
 - [x] add event listener for query string changes
 - [x] add a restart button (clears currentToken, hide win text, clears cache map)
-- [ ] add localstorage api to save gamestate information between page loads
+- [x] add localstorage api to save gamestate information between page loads
 - [x] add a recenter button so user can scroll while moving

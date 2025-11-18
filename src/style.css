@@ -2,6 +2,10 @@
   padding: 1rem;
 }
 
+#winStatus {
+  display: none;
+}
+
 #map {
   width: 100%;
   height: 80vh;

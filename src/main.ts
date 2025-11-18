@@ -37,27 +37,6 @@ const directions: Arrow[] = [
   { direction: "right", symbol: "→", delta: { i: 0, j: 1 } },
 ];
 
-// Create basic UI elements
-
-CreateAndAddDiv("map");
-CreateAndAddDiv("statusPanel");
-CreateAndAddDiv("winStatus");
-CreateAndAddDiv("controlPanel");
-CreateArrowKeys();
-
-CreateChildButton(CreateAndAddDiv("restartPanel"), "begin again")
-  .addEventListener("click", () => {
-    cacheMap.clear();
-    DrawVisibleMap();
-    currentToken = 0;
-    UpdateStatus();
-  });
-
-CreateChildButton(CreateAndAddDiv("recenterPanel"), "recenter")
-  .addEventListener("click", () => {
-    SetFollow(true);
-  });
-
 // Our classroom location
 const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
@@ -71,6 +50,31 @@ const COLLECT_DISTANCE = 2;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 const GOAL_TOKEN = 4;
 const MAX_TOKEN_SIZE = 2;
+
+// Create basic UI elements
+
+CreateAndAddDiv("map");
+CreateAndAddDiv("statusPanel");
+CreateAndAddDiv("winStatus").innerHTML =
+  `token of value ${GOAL_TOKEN} reached. you win !`;
+CreateAndAddDiv("controlPanel");
+CreateArrowKeys();
+
+CreateChildButton(CreateAndAddDiv("restartPanel"), "begin again")
+  .addEventListener("click", () => {
+    cacheMap.clear();
+    DrawVisibleMap();
+    document.getElementById("winStatus")!.style.display = "none";
+    currentToken = 0;
+    UpdateStatus();
+    SetFollow(true);
+    if (!watching) CenterMarker();
+  });
+
+CreateChildButton(CreateAndAddDiv("recenterPanel"), "recenter")
+  .addEventListener("click", () => {
+    SetFollow(true);
+  });
 
 // Create the map (element with id "map" is defined in index.html)
 const map = CreateMap();
@@ -281,7 +285,7 @@ function CheckWin() {
   const winStatusDiv = document.getElementById("winStatus")!;
 
   if (currentToken == GOAL_TOKEN) {
-    winStatusDiv.innerHTML = `token of value ${GOAL_TOKEN} reached. you win !`;
+    winStatusDiv.style.display = "block";
   }
 }
 
@@ -371,29 +375,6 @@ function GetInitialCacheValue(cell: Cell) {
   }
 }
 
-function SetInitialPosition() {
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const latlng = leaflet.latLng(
-        position.coords.latitude,
-        position.coords.longitude,
-      );
-      playerMarker.setLatLng(latlng);
-      playerMarker.bindTooltip("That's you!");
-      playerMarker.addTo(map);
-      map.panTo(latlng);
-      StartWatch();
-    },
-    () => {
-      playerMarker.setLatLng(CLASSROOM_LATLNG);
-      playerMarker.bindTooltip("That's you!");
-      playerMarker.addTo(map);
-      map.panTo(CLASSROOM_LATLNG);
-      SetControlScheme("buttons");
-    },
-  );
-}
-
 function StartWatch() {
   navigator.permissions.query({ name: "geolocation" }).then((result) => {
     if (result.state === "granted" && !watching) {
@@ -423,14 +404,101 @@ function SetButtonVisibility(visible: boolean) {
   recenterPanel.style.display = visible ? "none" : "block";
 }
 
+function SaveGameState() {
+  const state = {
+    playerLatLng: playerMarker.getLatLng(),
+    currentToken,
+    following,
+    cacheMap: Array.from(cacheMap.entries()), // converts Map to array
+  };
+  localStorage.setItem("gameState", JSON.stringify(state));
+}
+
 function SetControlScheme(scheme: "buttons" | "geo") {
   searchParams.set("controls", scheme);
   history.replaceState(null, "", `?${searchParams.toString()}`);
   SetButtonVisibility(scheme === "buttons");
-  if (scheme === "buttons") CenterMarker();
-  else SetFollow(true);
+
+  if (scheme === "buttons") {
+    following = false;
+    if (watchID !== null) {
+      navigator.geolocation.clearWatch(watchID);
+      watchID = null;
+    }
+    CenterMarker();
+  } else {
+    following = true;
+    StartWatch();
+  }
 }
 
+function SetInitialPosition() {
+  const saved = localStorage.getItem("gameState");
+  if (saved) {
+    LoadGameState();
+    playerMarker.addTo(map);
+    const scheme = searchParams.get("controls") === "geo" ? "geo" : "buttons";
+    SetControlScheme(scheme);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const latlng = leaflet.latLng(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+      playerMarker.setLatLng(latlng);
+      playerMarker.bindTooltip("That's you!");
+      playerMarker.addTo(map);
+      map.panTo(latlng);
+      SetControlScheme("geo");
+    },
+    () => {
+      playerMarker.setLatLng(CLASSROOM_LATLNG);
+      playerMarker.bindTooltip("That's you!");
+      playerMarker.addTo(map);
+      map.panTo(CLASSROOM_LATLNG);
+      SetControlScheme("buttons");
+    },
+  );
+}
+
+function LoadGameState() {
+  const saved = localStorage.getItem("gameState");
+  if (!saved) return;
+
+  const state = JSON.parse(saved);
+
+  if (state.playerLatLng) {
+    const latlng = leaflet.latLng(
+      state.playerLatLng.lat,
+      state.playerLatLng.lng,
+    );
+    playerMarker.setLatLng(latlng);
+    // Add to map if not already
+    playerMarker.addTo(map);
+    map.panTo(latlng);
+  }
+
+  if (state.currentToken !== undefined) currentToken = state.currentToken;
+  if (state.following !== undefined) following = state.following;
+
+  if (state.cacheMap) {
+    cacheMap.clear();
+    for (const [key, value] of state.cacheMap) {
+      cacheMap.set(key, value);
+    }
+  }
+
+  UpdateStatus();
+  DrawVisibleMap();
+}
+
+self.addEventListener("beforeunload", () => {
+  SaveGameState();
+});
+
+SetInitialPosition();
 UpdateStatus();
 DrawVisibleMap();
-SetInitialPosition();
