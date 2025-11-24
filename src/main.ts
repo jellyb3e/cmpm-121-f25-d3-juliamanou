@@ -38,7 +38,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 );
 
 const GAMEPLAY_ZOOM_LEVEL = 19;
-const TILE_DEGREES = 1e-4;
+const TILE_DEGREES = 5e-5;
 const COLLECT_DISTANCE = 2;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 const GOAL_TOKEN = 4;
@@ -109,7 +109,6 @@ function CreateMap(): leaflet.Map {
     .addTo(map);
 
   map.on("moveend", () => {
-    cacheLayerGroup.clearLayers();
     DrawVisibleMap();
   });
 
@@ -160,11 +159,13 @@ function DrawCache(cell: Cell) {
     weight: 1,
   }) as Cache;
 
+  if (CanCollect(cache)) cache.setStyle({ fillColor: "red", fillOpacity: .1 });
   cacheLayerGroup.addLayer(cache);
   SpawnCache(cache);
 }
 
 function DrawVisibleMap() {
+  cacheLayerGroup.clearLayers();
   const bounds = map.getBounds();
   const startCenterLatLng = GetNearestLatLngCenter(bounds.getSouthWest());
   const endCenterLatLng = GetNearestLatLngCenter(bounds.getNorthEast());
@@ -446,9 +447,6 @@ function LoadGameState() {
       cacheMap.set(key, value);
     }
   }
-
-  UpdateStatus();
-  DrawVisibleMap();
 }
 
 function SetInitialPosition() {
