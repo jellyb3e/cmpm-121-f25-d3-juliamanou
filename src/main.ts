@@ -463,12 +463,14 @@ function SetInitialPosition() {
         position.coords.longitude,
       );
       playerMarker.setLatLng(latlng);
+      playerMarker.addTo(map);
       map.panTo(latlng);
       SetControlScheme("geo");
     },
     () => {
       if (!saved) {
         playerMarker.setLatLng(CLASSROOM_LATLNG);
+        playerMarker.addTo(map);
         map.panTo(CLASSROOM_LATLNG);
       }
       SetControlScheme("buttons");
