@@ -2,9 +2,9 @@
 // @deno-types="npm:@types/leaflet"
 import leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
-import "./style.css";
 import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
+import "./style.css";
 
 /* interfaces && consts */
 
@@ -455,6 +455,7 @@ function SetInitialPosition() {
   if (saved) {
     LoadGameState();
     playerMarker.addTo(map);
+    map.panTo(playerMarker.getLatLng());
   }
 
   navigator.geolocation.getCurrentPosition(
