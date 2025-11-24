@@ -39,7 +39,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 5e-5;
-const COLLECT_DISTANCE = 2;
+const COLLECT_DISTANCE = 1;
 const CACHE_SPAWN_PROBABILITY = 0.1;
 const GOAL_TOKEN = 4;
 const MAX_TOKEN_SIZE = 2;
@@ -451,12 +451,10 @@ function LoadGameState() {
 
 function SetInitialPosition() {
   const saved = localStorage.getItem("gameState");
+
   if (saved) {
     LoadGameState();
     playerMarker.addTo(map);
-    const scheme = searchParams.get("controls") === "geo" ? "geo" : "buttons";
-    SetControlScheme(scheme);
-    return;
   }
 
   navigator.geolocation.getCurrentPosition(
@@ -466,16 +464,14 @@ function SetInitialPosition() {
         position.coords.longitude,
       );
       playerMarker.setLatLng(latlng);
-      playerMarker.bindTooltip("That's you!");
-      playerMarker.addTo(map);
-      map.panTo(latlng);
+      if (!saved) map.panTo(latlng);
       SetControlScheme("geo");
     },
     () => {
-      playerMarker.setLatLng(CLASSROOM_LATLNG);
-      playerMarker.bindTooltip("That's you!");
-      playerMarker.addTo(map);
-      map.panTo(CLASSROOM_LATLNG);
+      if (!saved) {
+        playerMarker.setLatLng(CLASSROOM_LATLNG);
+        map.panTo(CLASSROOM_LATLNG);
+      }
       SetControlScheme("buttons");
     },
   );
