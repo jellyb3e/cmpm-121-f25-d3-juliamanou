@@ -454,8 +454,6 @@ function SetInitialPosition() {
 
   if (saved) {
     LoadGameState();
-    playerMarker.addTo(map);
-    map.panTo(playerMarker.getLatLng());
   }
 
   navigator.geolocation.getCurrentPosition(
@@ -465,7 +463,7 @@ function SetInitialPosition() {
         position.coords.longitude,
       );
       playerMarker.setLatLng(latlng);
-      if (!saved) map.panTo(latlng);
+      map.panTo(latlng);
       SetControlScheme("geo");
     },
     () => {
